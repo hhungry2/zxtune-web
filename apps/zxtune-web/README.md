@@ -69,10 +69,21 @@ player.delete();
 `load` throws on unsupported content; use `zxtune.getExceptionMessage(err)` to
 get the text.
 
+To list what is inside a container instead of opening one known entry:
+
+```js
+const { tracks, pictures } = zxtune.detect(data, bytes.length);
+// tracks:   [{ subpath, type, title, author, program, durationMs }, ...]
+// pictures: [{ subpath, data: Uint8Array }, ...]   cover art, png/jpeg
+```
+
+`detect` walks archives, disk images and snapshots recursively - a `.szx`
+snapshot resolves to subpaths like `RAMP/+81920/+unHRUST1/+51/...`. It returns
+empty arrays rather than throwing when nothing is playable. Pass a `subpath`
+from the result straight back to `load`.
+
 Not implemented yet
 -------------------
 
-- `DetectModules` for containers holding several tracks (archives, ay files with
-  multiple songs) - only the explicit `subpath` form is available
 - spectrum analyzer (`Player::Analyze` in the jni layer)
 - global options accessor
