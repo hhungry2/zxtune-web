@@ -1,7 +1,7 @@
 // Realtime headroom check: how much faster than playback does the module render?
 //   node apps/zxtune-web/test/bench.mjs <file> [subpath]
-import { readFileSync } from 'node:fs';
 import createZXTune from '../../../bin/emscripten/release/zxtune.mjs';
+import { openWithSiblings } from './open.mjs';
 
 const RATE = 48000;      // browser default
 const CHUNK = 4096;      // samples pulled per callback
@@ -14,21 +14,20 @@ if (!path) {
 }
 
 const zxtune = await createZXTune();
-const bytes = new Uint8Array(readFileSync(path));
 
-const data = zxtune._malloc(bytes.length);
-zxtune.HEAPU8.set(bytes, data);
 const loadStart = performance.now();
 let track;
+let resolved = [];
 try {
-  track = zxtune.load(data, bytes.length, subpath);
+  ({ track, resolved } = openWithSiblings(zxtune, path, subpath));
 } catch (e) {
-  console.error(`${path}: load failed: ${zxtune.getExceptionMessage?.(e)?.join(': ') ?? e}`);
+  console.error(`${path}: load failed: ${zxtune.getExceptionMessage?.(e)?.at(-1) ?? e}`);
   process.exit(1);
-} finally {
-  zxtune._free(data);
 }
 const loadMs = performance.now() - loadStart;
+if (resolved.length) {
+  console.log(`resolved: ${resolved.join(', ')}`);
+}
 
 const player = track.createPlayer(RATE);
 const type = track.getProperty('Type', '?');

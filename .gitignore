@@ -25,3 +25,10 @@ local.properties
 
 #github pages payload
 /site/dist/
+
+#local test material- game rips are not ours to publish
+/test/*.zip
+/test/*.miniusf
+/test/*.mini2sf
+/test/*.usflib
+/test/*.2sflib

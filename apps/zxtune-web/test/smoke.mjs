@@ -1,7 +1,7 @@
 // Headless check: load a module, render a second of audio, report what came out.
 //   node apps/zxtune-web/test/smoke.mjs <file> [subpath]
-import { readFileSync } from 'node:fs';
 import createZXTune from '../../../bin/emscripten/release/zxtune.mjs';
+import { openWithSiblings } from './open.mjs';
 
 const [, , path, subpath = ''] = process.argv;
 if (!path) {
@@ -10,18 +10,12 @@ if (!path) {
 }
 
 const zxtune = await createZXTune();
-const bytes = new Uint8Array(readFileSync(path));
-
-const data = zxtune._malloc(bytes.length);
-zxtune.HEAPU8.set(bytes, data);
 let track;
 try {
-  track = zxtune.load(data, bytes.length, subpath);
+  ({ track } = openWithSiblings(zxtune, path, subpath));
 } catch (e) {
-  console.error('load failed:', zxtune.getExceptionMessage?.(e) ?? e);
+  console.error('load failed:', zxtune.getExceptionMessage?.(e)?.at(-1) ?? e);
   process.exit(1);
-} finally {
-  zxtune._free(data);
 }
 
 const props = ['Type', 'Title', 'Author', 'Program']
