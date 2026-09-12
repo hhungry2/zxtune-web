@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chiptune Bench</title>
+<meta name="description" content="The ZXTune core compiled to WebAssembly, playing ZX Spectrum, C64, NES, Game Boy and SNES music in the browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground:   #15161c;
+    --panel:    #1c1e27;
+    --raised:   #232631;
+    --line:     #2f3342;
+    --ink:      #e9e7e1;
+    --ink-dim:  #8a8d9d;
+    --ink-face: #5f6273;
+    --amber:    #f2a63c;
+    --amber-lt: #ffb75e;
+    --amber-dk: #b8761f;
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --cond: "IBM Plex Sans Condensed", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+
+  header { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 2rem; }
+
+  h1 {
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: clamp(2rem, 5vw, 2.9rem);
+    letter-spacing: -0.015em;
+    line-height: 1.05;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .lede { color: var(--ink-dim); max-width: 62ch; margin: 0; }
+  .lede code { font-family: var(--mono); font-size: .88em; color: var(--ink); }
+  .lede a { color: var(--ink); }
+
+  .build {
+    display: flex; flex-wrap: wrap; gap: .35rem 1.25rem;
+    font-family: var(--mono); font-size: .74rem; letter-spacing: .02em;
+    color: var(--ink-face); margin-top: .35rem;
+  }
+  .build b { color: var(--ink-dim); font-weight: 500; }
+
+  .cols { display: grid; grid-template-columns: 1fr; gap: 1.5rem; align-items: start; }
+  @media (min-width: 880px) { .cols { grid-template-columns: 1fr 20.5rem; } }
+
+  .rack { display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
+
+  .chip-group { display: flex; flex-direction: column; gap: .4rem; }
+
+  .chip-head {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .6rem;
+    padding-bottom: .3rem; border-bottom: 1px solid var(--line);
+  }
+  .chip-name {
+    font-family: var(--mono); font-size: .8rem; font-weight: 500;
+    letter-spacing: .08em; color: var(--amber);
+  }
+  .chip-desc { font-size: .78rem; color: var(--ink-face); }
+
+  .tracks { display: flex; flex-direction: column; }
+
+  .track {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr auto;
+    align-items: center;
+    gap: .85rem;
+    padding: .5rem .6rem;
+    background: none;
+    border: 0;
+    border-radius: 3px;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    width: 100%;
+    cursor: pointer;
+  }
+  .track:hover { background: var(--panel); }
+  .track:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
+  .track[aria-current="true"] { background: var(--raised); }
+  .track[aria-current="true"] .t-title { color: var(--amber); }
+  .track[aria-current="true"] .t-num { color: var(--amber-dk); }
+
+  .t-num { font-family: var(--mono); font-size: .74rem; color: var(--ink-face); font-variant-numeric: tabular-nums; }
+  .t-main { min-width: 0; }
+  .t-title { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+  .t-sub { display: block; font-size: .77rem; color: var(--ink-face); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .t-time { font-family: var(--mono); font-size: .77rem; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+
+  .deck {
+    position: sticky; top: 1.25rem;
+    display: flex; flex-direction: column; gap: 1rem;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 1.1rem;
+    min-width: 0;
+  }
+
+  .now-label { font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-face); }
+  .now-title { font-family: var(--cond); font-weight: 600; font-size: 1.3rem; line-height: 1.2; margin: .1rem 0 0; text-wrap: balance; overflow-wrap: anywhere; }
+  .now-by { color: var(--ink-dim); font-size: .88rem; overflow-wrap: anywhere; }
+
+  canvas.meter { display: block; width: 100%; height: 54px; background: var(--ground); border-radius: 2px; }
+
+  .seek { position: relative; height: 20px; cursor: pointer; display: flex; align-items: center; }
+  .seek-rail { position: absolute; inset-inline: 0; height: 3px; background: var(--line); border-radius: 2px; }
+  .seek-fill { position: absolute; left: 0; height: 3px; background: var(--amber); border-radius: 2px; width: 0; }
+  .seek:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 2px; }
+
+  .times {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: .76rem; color: var(--ink-dim);
+    font-variant-numeric: tabular-nums; margin-top: -.5rem;
+  }
+
+  .controls { display: flex; gap: .5rem; align-items: center; }
+
+  button.key {
+    font-family: var(--cond); font-weight: 600; font-size: .92rem; letter-spacing: .02em;
+    background: var(--raised); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: .45rem 1.1rem; cursor: pointer;
+  }
+  button.key:hover:not(:disabled) { border-color: var(--ink-face); }
+  button.key:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  button.key:disabled { opacity: .4; cursor: default; }
+  button.key.primary { background: var(--amber); color: #17140e; border-color: var(--amber); }
+  button.key.primary:hover:not(:disabled) { background: var(--amber-lt); border-color: var(--amber-lt); }
+
+  .readout { display: flex; flex-direction: column; gap: .35rem; padding-top: .9rem; border-top: 1px solid var(--line); }
+  .rd-row { display: flex; justify-content: space-between; gap: 1rem; font-size: .78rem; }
+  .rd-k { color: var(--ink-face); white-space: nowrap; }
+  .rd-v { font-family: var(--mono); color: var(--ink-dim); font-variant-numeric: tabular-nums; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .load-bar { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; margin-top: .15rem; }
+  .load-fill { height: 100%; width: 0; background: var(--amber-dk); }
+
+  .drop {
+    margin-top: 1.5rem; padding: 1rem;
+    border: 1px dashed var(--line); border-radius: 4px;
+    color: var(--ink-face); font-size: .84rem;
+    display: flex; flex-wrap: wrap; align-items: center; gap: .75rem;
+  }
+  .drop.over { border-color: var(--amber); color: var(--ink-dim); }
+  .drop input[type=file] { display: none; }
+  .drop label {
+    font-family: var(--cond); font-weight: 600; font-size: .86rem;
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: .3rem .8rem; cursor: pointer; color: var(--ink);
+  }
+  .drop label:hover { border-color: var(--ink-face); }
+
+  .err { color: #f08a7a; font-size: .82rem; min-height: 1.2em; overflow-wrap: anywhere; }
+
+  footer {
+    margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--line);
+    color: var(--ink-face); font-size: .8rem;
+    display: flex; flex-wrap: wrap; gap: .4rem 1.5rem;
+  }
+  footer a { color: var(--ink-dim); }
+
+  .boot { color: var(--ink-face); font-family: var(--mono); font-size: .8rem; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Chiptune Bench</h1>
+    <p class="lede">The <a href="https://github.com/vitamin-caig/zxtune">ZXTune</a> core compiled to WebAssembly &mdash; the same decoder as the desktop and Android builds, with no audio backend, no file&nbsp;io and no threads. The page owns the clock and pulls samples; <code>wasm</code> only decodes.</p>
+    <div class="build">
+      <span><b>wasm</b> 8.7 MB</span>
+      <span><b>exceptions</b> native</span>
+      <span><b>threads</b> none</span>
+      <span><b>COOP/COEP</b> not required</span>
+    </div>
+  </header>
+
+  <div class="cols">
+    <main class="rack" id="rack">
+      <p class="boot" id="boot">Starting WebAssembly module&hellip;</p>
+    </main>
+
+    <aside class="deck">
+      <div>
+        <div class="now-label" id="n-state">Idle</div>
+        <h2 class="now-title" id="n-title">Pick a tune</h2>
+        <div class="now-by" id="n-by">&nbsp;</div>
+      </div>
+
+      <canvas class="meter" id="meter" width="600" height="160"></canvas>
+
+      <div class="seek" id="seek" role="slider" tabindex="0"
+           aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="seek-rail"></div>
+        <div class="seek-fill" id="seek-fill"></div>
+      </div>
+      <div class="times"><span id="t-now">0:00</span><span id="t-end">0:00</span></div>
+
+      <div class="controls">
+        <button class="key primary" id="play" disabled>Play</button>
+        <button class="key" id="stop" disabled>Stop</button>
+      </div>
+
+      <div class="readout">
+        <div class="rd-row"><span class="rd-k">Chip</span><span class="rd-v" id="r-chip">&mdash;</span></div>
+        <div class="rd-row"><span class="rd-k">Format</span><span class="rd-v" id="r-format">&mdash;</span></div>
+        <div class="rd-row"><span class="rd-k">Made with</span><span class="rd-v" id="r-prog">&mdash;</span></div>
+        <div class="rd-row"><span class="rd-k">Sample rate</span><span class="rd-v" id="r-rate">&mdash;</span></div>
+        <div class="rd-row"><span class="rd-k">Render load</span><span class="rd-v" id="r-load">&mdash;</span></div>
+        <div class="load-bar"><div class="load-fill" id="r-loadbar"></div></div>
+      </div>
+
+      <div class="err" id="err"></div>
+    </aside>
+  </div>
+
+  <div class="drop" id="drop">
+    <span>Or play your own file &mdash; drop it here.</span>
+    <input type="file" id="file">
+    <label for="file">Choose file</label>
+  </div>
+
+  <footer>
+    <span>ZXTune is LGPL-3.0. <a href="https://github.com/hhungry2/zxtune-web">Source for this build</a>.</span>
+    <span>Tunes are the sample set shipped in the ZXTune repository.</span>
+  </footer>
+</div>
+
+<script type="module">
+import createZXTune from './zxtune.mjs';
+
+/* The sample set is filed by the silicon that made the sound, so the rack is too. */
+const CHIPS = [
+  { id: 'AY-3-8910', desc: 'General Instrument PSG — ZX Spectrum 128, Atari ST, MSX',
+    tunes: [{ file: 'Speccy2.pt3' }, { file: 'TOXIC2.stc' }, { file: 'Kurztech.ym' }] },
+  { id: 'MOS 6581', desc: 'The SID — Commodore 64',
+    tunes: [{ file: 'Love_Is_a_Shield.sid' }] },
+  { id: 'RP2A03', desc: 'Ricoh APU — Nintendo Famicom / NES',
+    tunes: [{ file: 'knifus.nsf' }] },
+  { id: 'LR35902', desc: 'Sharp core APU — Nintendo Game Boy',
+    tunes: [{ file: 'sos.gbs' }] },
+  { id: 'SPC700', desc: 'Sony audio CPU + DSP — Super Famicom / SNES',
+    tunes: [{ file: 'ala-16.spc' }] },
+  { id: 'SAA1099', desc: 'Philips PSG — SAM Coupé, Game Blaster',
+    tunes: [{ file: 'carillon.cop' }] },
+  { id: 'YM2203', desc: 'Yamaha OPN — NEC PC-88 / PC-98, arcade',
+    tunes: [{ file: 'disco.tfe' }] },
+];
+
+const CHUNK = 4096;        // samples pulled per render call
+const LOOKAHEAD = 0.35;    // seconds of audio kept scheduled ahead of the clock
+
+const $ = id => document.getElementById(id);
+const fmt = ms => {
+  const total = Math.max(0, Math.round(ms / 1000));
+  return Math.floor(total / 60) + ':' + String(total % 60).padStart(2, '0');
+};
+
+let zxtune, ctx, gain, analyser, freqData;
+let heap = 0;
+let player = null;
+let current = null;
+let sources = [];
+let scheduledUntil = 0;    // ctx.currentTime at which scheduled audio runs out
+let scheduledMs = 0;       // module position at that same moment
+let pumpTimer = 0;
+let loadEma = 0;
+let ended = false;
+
+function audioInit() {
+  if (ctx) return;
+  ctx = new AudioContext();
+  gain = ctx.createGain();
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 128;
+  analyser.smoothingTimeConstant = 0.72;
+  freqData = new Uint8Array(analyser.frequencyBinCount);
+  gain.connect(analyser);
+  analyser.connect(ctx.destination);
+  $('r-rate').textContent = (ctx.sampleRate / 1000).toFixed(1) + ' kHz';
+}
+
+function flush() {
+  for (const src of sources) {
+    try { src.stop(); } catch { /* already finished */ }
+  }
+  sources = [];
+}
+
+function pump() {
+  if (!player || ended) return;
+  const budgetMs = (CHUNK / ctx.sampleRate) * 1000;
+  while (scheduledUntil < ctx.currentTime + LOOKAHEAD) {
+    const started = performance.now();
+    const more = player.render(heap, CHUNK);
+    const spent = performance.now() - started;
+    loadEma = loadEma ? loadEma * 0.85 + spent * 0.15 : spent;
+
+    const pcm = zxtune.HEAP16.subarray(heap >> 1, (heap >> 1) + CHUNK * 2);
+    const block = ctx.createBuffer(2, CHUNK, ctx.sampleRate);
+    const left = block.getChannelData(0);
+    const right = block.getChannelData(1);
+    for (let i = 0; i < CHUNK; ++i) {
+      left[i] = pcm[2 * i] / 32768;
+      right[i] = pcm[2 * i + 1] / 32768;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = block;
+    src.connect(gain);
+    const at = Math.max(scheduledUntil, ctx.currentTime + 0.02);
+    src.start(at);
+    sources.push(src);
+    if (sources.length > 24) sources = sources.slice(-24);
+
+    scheduledUntil = at + CHUNK / ctx.sampleRate;
+    scheduledMs += (CHUNK / ctx.sampleRate) * 1000;
+
+    const pct = Math.min(100, (loadEma / budgetMs) * 100);
+    $('r-load').textContent = loadEma.toFixed(2) + ' ms · ' + pct.toFixed(0) + '%';
+    $('r-loadbar').style.width = pct + '%';
+
+    if (!more) { ended = true; break; }
+  }
+}
+
+function audiblePosition() {
+  if (!player) return 0;
+  const ahead = Math.max(0, scheduledUntil - ctx.currentTime) * 1000;
+  return Math.max(0, scheduledMs - ahead);
+}
+
+function drawMeter() {
+  const canvas = $('meter');
+  const g = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  g.fillStyle = '#15161c';
+  g.fillRect(0, 0, w, h);
+  if (!analyser) return;
+  analyser.getByteFrequencyData(freqData);
+  const bw = w / freqData.length;
+  for (let i = 0; i < freqData.length; ++i) {
+    const v = freqData[i] / 255;
+    const bh = Math.max(1, v * (h - 8));
+    g.fillStyle = v > 0.72 ? '#f2a63c' : v > 0.3 ? '#b8761f' : '#4a4227';
+    g.fillRect(i * bw + 1, h - bh, Math.max(1, bw - 2), bh);
+  }
+}
+
+function frame() {
+  requestAnimationFrame(frame);
+  drawMeter();
+  if (!player || !current) return;
+  const pos = audiblePosition();
+  $('t-now').textContent = fmt(pos);
+  const ratio = current.durationMs ? Math.min(1, pos / current.durationMs) : 0;
+  $('seek-fill').style.width = (ratio * 100) + '%';
+  $('seek').setAttribute('aria-valuenow', String(Math.round(ratio * 100)));
+  if (ended && ctx.currentTime > scheduledUntil) stop();
+}
+
+function withHeap(bytes, fn) {
+  const p = zxtune._malloc(bytes.length);
+  zxtune.HEAPU8.set(bytes, p);
+  try { return fn(p, bytes.length); }
+  finally { zxtune._free(p); }
+}
+
+function describe(bytes, subpath) {
+  return withHeap(bytes, (p, n) => {
+    const track = zxtune.load(p, n, subpath || '');
+    const meta = {
+      type: track.getProperty('Type', ''),
+      title: track.getProperty('Title', ''),
+      author: track.getProperty('Author', ''),
+      program: track.getProperty('Program', ''),
+      durationMs: track.getDuration(),
+    };
+    track.delete();
+    return meta;
+  });
+}
+
+function makePlayer(bytes, subpath) {
+  return withHeap(bytes, (p, n) => {
+    const track = zxtune.load(p, n, subpath || '');
+    const made = track.createPlayer(ctx.sampleRate);
+    track.delete();
+    return made;
+  });
+}
+
+function errorText(e) {
+  const parts = zxtune.getExceptionMessage ? zxtune.getExceptionMessage(e) : null;
+  return parts ? parts[parts.length - 1] : String(e);
+}
+
+function stop() {
+  clearInterval(pumpTimer);
+  pumpTimer = 0;
+  flush();
+  if (player) { player.delete(); player = null; }
+  ended = false;
+  $('play').textContent = 'Play';
+  $('play').disabled = true;
+  $('stop').disabled = true;
+  $('n-state').textContent = 'Idle';
+  for (const el of document.querySelectorAll('.track')) el.setAttribute('aria-current', 'false');
+}
+
+async function play(entry, bytes) {
+  $('err').textContent = '';
+  audioInit();
+  stop();
+  try {
+    player = makePlayer(bytes, entry.subpath);
+  } catch (e) {
+    $('err').textContent = errorText(e);
+    return;
+  }
+  current = entry;
+  ended = false;
+  scheduledMs = 0;
+  scheduledUntil = ctx.currentTime;
+  loadEma = 0;
+
+  $('n-state').textContent = 'Now playing';
+  $('n-title').textContent = entry.title || entry.file;
+  $('n-by').textContent = entry.author || ' ';
+  $('r-chip').textContent = entry.chip;
+  $('r-format').textContent = entry.type || '—';
+  $('r-prog').textContent = entry.program || '—';
+  $('t-end').textContent = fmt(entry.durationMs);
+  $('play').disabled = false;
+  $('play').textContent = 'Pause';
+  $('stop').disabled = false;
+
+  await ctx.resume();
+  pump();
+  pumpTimer = setInterval(pump, 120);
+}
+
+async function fetchTune(file) {
+  const res = await fetch('tunes/' + file);
+  if (!res.ok) throw new Error(res.status + ' ' + file);
+  return new Uint8Array(await res.arrayBuffer());
+}
+
+async function buildRack() {
+  const rack = $('rack');
+  rack.innerHTML = '';
+  let index = 0;
+  for (const chip of CHIPS) {
+    const group = document.createElement('section');
+    group.className = 'chip-group';
+    const head = document.createElement('div');
+    head.className = 'chip-head';
+    const name = document.createElement('span');
+    name.className = 'chip-name';
+    name.textContent = chip.id;
+    const desc = document.createElement('span');
+    desc.className = 'chip-desc';
+    desc.textContent = chip.desc;
+    head.append(name, desc);
+    const list = document.createElement('div');
+    list.className = 'tracks';
+    group.append(head, list);
+    rack.append(group);
+
+    for (const tune of chip.tunes) {
+      const bytes = await fetchTune(tune.file);
+      const meta = describe(bytes, tune.subpath);
+      const entry = Object.assign({}, tune, meta, { chip: chip.id });
+
+      const row = document.createElement('button');
+      row.className = 'track';
+      row.type = 'button';
+      row.setAttribute('aria-current', 'false');
+
+      const num = document.createElement('span');
+      num.className = 't-num';
+      num.textContent = String(++index).padStart(2, '0');
+
+      const main = document.createElement('span');
+      main.className = 't-main';
+      const title = document.createElement('span');
+      title.className = 't-title';
+      title.textContent = meta.title || tune.file;
+      const sub = document.createElement('span');
+      sub.className = 't-sub';
+      sub.textContent = [meta.author, meta.program || meta.type].filter(Boolean).join(' · ');
+      main.append(title, sub);
+
+      const time = document.createElement('span');
+      time.className = 't-time';
+      time.textContent = fmt(meta.durationMs);
+
+      row.append(num, main, time);
+      row.addEventListener('click', async () => {
+        await play(entry, bytes);
+        row.setAttribute('aria-current', 'true');
+      });
+      list.append(row);
+    }
+  }
+}
+
+$('play').addEventListener('click', async () => {
+  if (!player) return;
+  if (ctx.state === 'running') {
+    await ctx.suspend();
+    $('play').textContent = 'Play';
+    $('n-state').textContent = 'Paused';
+  } else {
+    await ctx.resume();
+    $('play').textContent = 'Pause';
+    $('n-state').textContent = 'Now playing';
+  }
+});
+
+$('stop').addEventListener('click', stop);
+
+function seekTo(ratio) {
+  if (!player || !current) return;
+  const target = Math.max(0, Math.min(current.durationMs, ratio * current.durationMs));
+  flush();
+  player.seek(Math.round(target));
+  ended = false;
+  scheduledMs = target;
+  scheduledUntil = ctx.currentTime;
+  pump();
+}
+
+$('seek').addEventListener('click', e => {
+  const box = e.currentTarget.getBoundingClientRect();
+  seekTo((e.clientX - box.left) / box.width);
+});
+
+$('seek').addEventListener('keydown', e => {
+  if (!current) return;
+  const step = e.key === 'ArrowRight' ? 5 : e.key === 'ArrowLeft' ? -5 : 0;
+  if (!step) return;
+  e.preventDefault();
+  seekTo((audiblePosition() + step * 1000) / current.durationMs);
+});
+
+async function playLocal(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let meta;
+  try {
+    meta = describe(bytes);
+  } catch (e) {
+    $('err').textContent = file.name + ': ' + errorText(e);
+    return;
+  }
+  await play(Object.assign({}, meta, { file: file.name, chip: 'your file' }), bytes);
+}
+
+$('file').addEventListener('change', e => {
+  if (e.target.files[0]) playLocal(e.target.files[0]);
+});
+
+const drop = $('drop');
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', e => {
+  e.preventDefault();
+  drop.classList.remove('over');
+  if (e.dataTransfer.files[0]) playLocal(e.dataTransfer.files[0]);
+});
+
+try {
+  zxtune = await createZXTune();
+  heap = zxtune._malloc(CHUNK * 4);
+  await buildRack();
+  requestAnimationFrame(frame);
+} catch (e) {
+  $('boot').textContent = 'Failed to start: ' + e;
+}
+</script>
+</body>
+</html>
