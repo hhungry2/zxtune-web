@@ -194,9 +194,9 @@
     <h1>Chiptune Bench</h1>
     <p class="lede">The <a href="https://github.com/vitamin-caig/zxtune">ZXTune</a> core compiled to WebAssembly &mdash; the same decoder as the desktop and Android builds, with no audio backend, no file&nbsp;io and no threads. The page owns the clock and pulls samples; <code>wasm</code> only decodes.</p>
     <div class="build">
-      <span><b>wasm</b> 8.7 MB</span>
+      <span><b>wasm</b> 6.8 MB</span>
       <span><b>exceptions</b> native</span>
-      <span><b>threads</b> none</span>
+      <span><b>audio</b> worklet</span>
       <span><b>COOP/COEP</b> not required</span>
     </div>
   </header>
@@ -253,7 +253,7 @@
 </div>
 
 <script type="module">
-import createZXTune from './zxtune.mjs';
+import { ZXTunePlayer } from './player.mjs';
 
 /* The sample set is filed by the silicon that made the sound, so the rack is too. */
 const CHIPS = [
@@ -273,87 +273,15 @@ const CHIPS = [
     tunes: [{ file: 'disco.tfe' }] },
 ];
 
-const CHUNK = 4096;        // samples pulled per render call
-const LOOKAHEAD = 0.35;    // seconds of audio kept scheduled ahead of the clock
-
 const $ = id => document.getElementById(id);
 const fmt = ms => {
   const total = Math.max(0, Math.round(ms / 1000));
   return Math.floor(total / 60) + ':' + String(total % 60).padStart(2, '0');
 };
 
-let zxtune, ctx, gain, analyser, freqData;
-let heap = 0;
-let player = null;
-let current = null;
-let sources = [];
-let scheduledUntil = 0;    // ctx.currentTime at which scheduled audio runs out
-let scheduledMs = 0;       // module position at that same moment
-let pumpTimer = 0;
-let loadEma = 0;
-let ended = false;
-
-function audioInit() {
-  if (ctx) return;
-  ctx = new AudioContext();
-  gain = ctx.createGain();
-  analyser = ctx.createAnalyser();
-  analyser.fftSize = 128;
-  analyser.smoothingTimeConstant = 0.72;
-  freqData = new Uint8Array(analyser.frequencyBinCount);
-  gain.connect(analyser);
-  analyser.connect(ctx.destination);
-  $('r-rate').textContent = (ctx.sampleRate / 1000).toFixed(1) + ' kHz';
-}
-
-function flush() {
-  for (const src of sources) {
-    try { src.stop(); } catch { /* already finished */ }
-  }
-  sources = [];
-}
-
-function pump() {
-  if (!player || ended) return;
-  const budgetMs = (CHUNK / ctx.sampleRate) * 1000;
-  while (scheduledUntil < ctx.currentTime + LOOKAHEAD) {
-    const started = performance.now();
-    const more = player.render(heap, CHUNK);
-    const spent = performance.now() - started;
-    loadEma = loadEma ? loadEma * 0.85 + spent * 0.15 : spent;
-
-    const pcm = zxtune.HEAP16.subarray(heap >> 1, (heap >> 1) + CHUNK * 2);
-    const block = ctx.createBuffer(2, CHUNK, ctx.sampleRate);
-    const left = block.getChannelData(0);
-    const right = block.getChannelData(1);
-    for (let i = 0; i < CHUNK; ++i) {
-      left[i] = pcm[2 * i] / 32768;
-      right[i] = pcm[2 * i + 1] / 32768;
-    }
-    const src = ctx.createBufferSource();
-    src.buffer = block;
-    src.connect(gain);
-    const at = Math.max(scheduledUntil, ctx.currentTime + 0.02);
-    src.start(at);
-    sources.push(src);
-    if (sources.length > 24) sources = sources.slice(-24);
-
-    scheduledUntil = at + CHUNK / ctx.sampleRate;
-    scheduledMs += (CHUNK / ctx.sampleRate) * 1000;
-
-    const pct = Math.min(100, (loadEma / budgetMs) * 100);
-    $('r-load').textContent = loadEma.toFixed(2) + ' ms · ' + pct.toFixed(0) + '%';
-    $('r-loadbar').style.width = pct + '%';
-
-    if (!more) { ended = true; break; }
-  }
-}
-
-function audiblePosition() {
-  if (!player) return 0;
-  const ahead = Math.max(0, scheduledUntil - ctx.currentTime) * 1000;
-  return Math.max(0, scheduledMs - ahead);
-}
+let player;
+let current = null;      // { bytes, subpath, meta, chip, file }
+let freqData;
 
 function drawMeter() {
   const canvas = $('meter');
@@ -362,8 +290,8 @@ function drawMeter() {
   const h = canvas.height;
   g.fillStyle = '#15161c';
   g.fillRect(0, 0, w, h);
-  if (!analyser) return;
-  analyser.getByteFrequencyData(freqData);
+  if (!freqData) return;
+  player.analyser.getByteFrequencyData(freqData);
   const bw = w / freqData.length;
   for (let i = 0; i < freqData.length; ++i) {
     const v = freqData[i] / 255;
@@ -376,94 +304,102 @@ function drawMeter() {
 function frame() {
   requestAnimationFrame(frame);
   drawMeter();
-  if (!player || !current) return;
-  const pos = audiblePosition();
-  $('t-now').textContent = fmt(pos);
-  const ratio = current.durationMs ? Math.min(1, pos / current.durationMs) : 0;
+}
+
+function showPosition(ms) {
+  $('t-now').textContent = fmt(ms);
+  const total = current?.meta?.durationMs ?? 0;
+  const ratio = total ? Math.min(1, ms / total) : 0;
   $('seek-fill').style.width = (ratio * 100) + '%';
   $('seek').setAttribute('aria-valuenow', String(Math.round(ratio * 100)));
-  if (ended && ctx.currentTime > scheduledUntil) stop();
 }
 
-function withHeap(bytes, fn) {
-  const p = zxtune._malloc(bytes.length);
-  zxtune.HEAPU8.set(bytes, p);
-  try { return fn(p, bytes.length); }
-  finally { zxtune._free(p); }
-}
-
-function describe(bytes, subpath) {
-  return withHeap(bytes, (p, n) => {
-    const track = zxtune.load(p, n, subpath || '');
-    const meta = {
-      type: track.getProperty('Type', ''),
-      title: track.getProperty('Title', ''),
-      author: track.getProperty('Author', ''),
-      program: track.getProperty('Program', ''),
-      durationMs: track.getDuration(),
-    };
-    track.delete();
-    return meta;
-  });
-}
-
-function makePlayer(bytes, subpath) {
-  return withHeap(bytes, (p, n) => {
-    const track = zxtune.load(p, n, subpath || '');
-    const made = track.createPlayer(ctx.sampleRate);
-    track.delete();
-    return made;
-  });
-}
-
-function errorText(e) {
-  const parts = zxtune.getExceptionMessage ? zxtune.getExceptionMessage(e) : null;
-  return parts ? parts[parts.length - 1] : String(e);
+function markCurrent(row) {
+  for (const el of document.querySelectorAll('.track')) el.setAttribute('aria-current', 'false');
+  row?.setAttribute('aria-current', 'true');
 }
 
 function stop() {
-  clearInterval(pumpTimer);
-  pumpTimer = 0;
-  flush();
-  if (player) { player.delete(); player = null; }
-  ended = false;
+  player.stop();
+  current = null;
   $('play').textContent = 'Play';
   $('play').disabled = true;
   $('stop').disabled = true;
   $('n-state').textContent = 'Idle';
-  for (const el of document.querySelectorAll('.track')) el.setAttribute('aria-current', 'false');
+  showPosition(0);
+  markCurrent(null);
 }
 
-async function play(entry, bytes) {
+async function play(entry, row) {
   $('err').textContent = '';
-  audioInit();
-  stop();
+  let meta;
   try {
-    player = makePlayer(bytes, entry.subpath);
+    meta = await player.open(entry.bytes, entry.subpath ?? '');
   } catch (e) {
-    $('err').textContent = errorText(e);
+    $('err').textContent = e.message;
     return;
   }
-  current = entry;
-  ended = false;
-  scheduledMs = 0;
-  scheduledUntil = ctx.currentTime;
-  loadEma = 0;
-
+  current = { ...entry, meta };
   $('n-state').textContent = 'Now playing';
-  $('n-title').textContent = entry.title || entry.file;
-  $('n-by').textContent = entry.author || ' ';
+  $('n-title').textContent = meta.title || entry.file;
+  $('n-by').textContent = meta.author || ' ';
   $('r-chip').textContent = entry.chip;
-  $('r-format').textContent = entry.type || '—';
-  $('r-prog').textContent = entry.program || '—';
-  $('t-end').textContent = fmt(entry.durationMs);
+  $('r-format').textContent = meta.type || '—';
+  $('r-prog').textContent = meta.program || '—';
+  $('t-end').textContent = fmt(meta.durationMs);
   $('play').disabled = false;
   $('play').textContent = 'Pause';
   $('stop').disabled = false;
+  markCurrent(row);
+  await player.play();
+}
 
-  await ctx.resume();
-  pump();
-  pumpTimer = setInterval(pump, 120);
+function addRow(list, entry, index) {
+  const row = document.createElement('button');
+  row.className = 'track';
+  row.type = 'button';
+  row.setAttribute('aria-current', 'false');
+
+  const num = document.createElement('span');
+  num.className = 't-num';
+  num.textContent = String(index).padStart(2, '0');
+
+  const main = document.createElement('span');
+  main.className = 't-main';
+  const title = document.createElement('span');
+  title.className = 't-title';
+  title.textContent = entry.title || entry.file;
+  const sub = document.createElement('span');
+  sub.className = 't-sub';
+  sub.textContent = [entry.author, entry.program || entry.type].filter(Boolean).join(' · ');
+  main.append(title, sub);
+
+  const time = document.createElement('span');
+  time.className = 't-time';
+  time.textContent = fmt(entry.durationMs);
+
+  row.append(num, main, time);
+  row.addEventListener('click', () => play(entry, row));
+  list.append(row);
+  return row;
+}
+
+function addGroup(id, desc) {
+  const group = document.createElement('section');
+  group.className = 'chip-group';
+  const head = document.createElement('div');
+  head.className = 'chip-head';
+  const name = document.createElement('span');
+  name.className = 'chip-name';
+  name.textContent = id;
+  const note = document.createElement('span');
+  note.className = 'chip-desc';
+  note.textContent = desc;
+  head.append(name, note);
+  const list = document.createElement('div');
+  list.className = 'tracks';
+  group.append(head, list);
+  return { group, list };
 }
 
 async function fetchTune(file) {
@@ -477,68 +413,24 @@ async function buildRack() {
   rack.innerHTML = '';
   let index = 0;
   for (const chip of CHIPS) {
-    const group = document.createElement('section');
-    group.className = 'chip-group';
-    const head = document.createElement('div');
-    head.className = 'chip-head';
-    const name = document.createElement('span');
-    name.className = 'chip-name';
-    name.textContent = chip.id;
-    const desc = document.createElement('span');
-    desc.className = 'chip-desc';
-    desc.textContent = chip.desc;
-    head.append(name, desc);
-    const list = document.createElement('div');
-    list.className = 'tracks';
-    group.append(head, list);
+    const { group, list } = addGroup(chip.id, chip.desc);
     rack.append(group);
-
     for (const tune of chip.tunes) {
       const bytes = await fetchTune(tune.file);
-      const meta = describe(bytes, tune.subpath);
-      const entry = Object.assign({}, tune, meta, { chip: chip.id });
-
-      const row = document.createElement('button');
-      row.className = 'track';
-      row.type = 'button';
-      row.setAttribute('aria-current', 'false');
-
-      const num = document.createElement('span');
-      num.className = 't-num';
-      num.textContent = String(++index).padStart(2, '0');
-
-      const main = document.createElement('span');
-      main.className = 't-main';
-      const title = document.createElement('span');
-      title.className = 't-title';
-      title.textContent = meta.title || tune.file;
-      const sub = document.createElement('span');
-      sub.className = 't-sub';
-      sub.textContent = [meta.author, meta.program || meta.type].filter(Boolean).join(' · ');
-      main.append(title, sub);
-
-      const time = document.createElement('span');
-      time.className = 't-time';
-      time.textContent = fmt(meta.durationMs);
-
-      row.append(num, main, time);
-      row.addEventListener('click', async () => {
-        await play(entry, bytes);
-        row.setAttribute('aria-current', 'true');
-      });
-      list.append(row);
+      const [meta] = await player.detect(bytes);
+      addRow(list, { ...tune, ...meta, bytes, chip: chip.id }, ++index);
     }
   }
 }
 
 $('play').addEventListener('click', async () => {
-  if (!player) return;
-  if (ctx.state === 'running') {
-    await ctx.suspend();
+  if (!current) return;
+  if (player.playing) {
+    await player.pause();
     $('play').textContent = 'Play';
     $('n-state').textContent = 'Paused';
   } else {
-    await ctx.resume();
+    await player.play();
     $('play').textContent = 'Pause';
     $('n-state').textContent = 'Now playing';
   }
@@ -546,44 +438,52 @@ $('play').addEventListener('click', async () => {
 
 $('stop').addEventListener('click', stop);
 
-function seekTo(ratio) {
-  if (!player || !current) return;
-  const target = Math.max(0, Math.min(current.durationMs, ratio * current.durationMs));
-  flush();
-  player.seek(Math.round(target));
-  ended = false;
-  scheduledMs = target;
-  scheduledUntil = ctx.currentTime;
-  pump();
+function seekTo(ms) {
+  if (!current) return;
+  player.seek(Math.max(0, Math.min(current.meta.durationMs, ms)));
 }
 
 $('seek').addEventListener('click', e => {
+  if (!current) return;
   const box = e.currentTarget.getBoundingClientRect();
-  seekTo((e.clientX - box.left) / box.width);
+  seekTo(((e.clientX - box.left) / box.width) * current.meta.durationMs);
 });
 
 $('seek').addEventListener('keydown', e => {
-  if (!current) return;
   const step = e.key === 'ArrowRight' ? 5 : e.key === 'ArrowLeft' ? -5 : 0;
   if (!step) return;
   e.preventDefault();
-  seekTo((audiblePosition() + step * 1000) / current.durationMs);
+  seekTo(player.positionMs + step * 1000);
 });
 
-async function playLocal(file) {
+// A dropped file may hold an archive or a multi-song rip, so list what is in it
+// rather than guessing which entry was meant.
+async function openLocal(file) {
+  $('err').textContent = '';
   const bytes = new Uint8Array(await file.arrayBuffer());
-  let meta;
+  let tracks;
   try {
-    meta = describe(bytes);
+    tracks = await player.detect(bytes);
   } catch (e) {
-    $('err').textContent = file.name + ': ' + errorText(e);
+    $('err').textContent = file.name + ': ' + e.message;
     return;
   }
-  await play(Object.assign({}, meta, { file: file.name, chip: 'your file' }), bytes);
+  if (!tracks.length) {
+    $('err').textContent = file.name + ': nothing playable in it';
+    return;
+  }
+  document.querySelector('.chip-group[data-local]')?.remove();
+  const { group, list } = addGroup(file.name, tracks.length + (tracks.length > 1 ? ' tracks found' : ' track found'));
+  group.dataset.local = '1';
+  $('rack').prepend(group);
+  let index = 0;
+  const entries = tracks.map(track => ({ ...track, bytes, file: file.name, chip: 'your file' }));
+  const rows = entries.map(entry => addRow(list, entry, ++index));
+  await play(entries[0], rows[0]);
 }
 
 $('file').addEventListener('change', e => {
-  if (e.target.files[0]) playLocal(e.target.files[0]);
+  if (e.target.files[0]) openLocal(e.target.files[0]);
 });
 
 const drop = $('drop');
@@ -592,12 +492,20 @@ drop.addEventListener('dragleave', () => drop.classList.remove('over'));
 drop.addEventListener('drop', e => {
   e.preventDefault();
   drop.classList.remove('over');
-  if (e.dataTransfer.files[0]) playLocal(e.dataTransfer.files[0]);
+  if (e.dataTransfer.files[0]) openLocal(e.dataTransfer.files[0]);
 });
 
 try {
-  zxtune = await createZXTune();
-  heap = zxtune._malloc(CHUNK * 4);
+  player = await ZXTunePlayer.create();
+  freqData = new Uint8Array(player.analyser.frequencyBinCount);
+  player.onposition = showPosition;
+  player.onended = stop;
+  player.onload = ({ ms, budgetMs }) => {
+    const pct = Math.min(100, (ms / budgetMs) * 100);
+    $('r-load').textContent = ms.toFixed(2) + ' ms · ' + pct.toFixed(0) + '%';
+    $('r-loadbar').style.width = pct + '%';
+  };
+  $('r-rate').textContent = (player.context.sampleRate / 1000).toFixed(1) + ' kHz';
   await buildRack();
   requestAnimationFrame(frame);
 } catch (e) {
