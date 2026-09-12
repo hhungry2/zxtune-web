@@ -22,6 +22,8 @@ support_mp3 = 1
 support_ogg = 1
 support_flac = 1
 support_curl = 1
+else ifeq ($(platform),emscripten)
+#no features- sound is rendered into the buffer provided by javascript
 else ifeq ($(platform),android)
 #no features
 else ifeq ($(platform),diagnostics)
