@@ -447,6 +447,7 @@ namespace Module::GSF
       {
         builder.AddMeta(*file.Meta);
       }
+      Require(!!file.PackedProgramSection);
       builder.AddRom(*file.PackedProgramSection);
       // don't know anything about reserved section state
       return Holder::Create(builder.CaptureResult(), std::move(properties));
@@ -479,7 +480,10 @@ namespace Module::GSF
       {
         MergeRom(additionalFiles.at(*it), additionalFiles, dst, level + 1);
       }
-      dst.AddRom(*data.PackedProgramSection);
+      if (data.PackedProgramSection)
+      {
+        dst.AddRom(*data.PackedProgramSection);
+      }
       if (it != lim && level < MAX_LEVEL)
       {
         for (++it; it != lim; ++it)
