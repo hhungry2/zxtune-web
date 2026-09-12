@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZXTune web</title>
+<style>
+  body { font: 14px/1.5 system-ui, sans-serif; margin: 2rem auto; max-width: 40rem; padding: 0 1rem; }
+  #info { white-space: pre-wrap; min-height: 4.5rem; }
+  #error { color: #b00; }
+  button { padding: .3rem 1rem; }
+</style>
+</head>
+<body>
+<h1>ZXTune web</h1>
+<p><input type="file" id="file"> <button id="stop" disabled>stop</button></p>
+<div id="info"></div>
+<div id="error"></div>
+<script type="module">
+import createZXTune from './zxtune.mjs';
+
+const CHUNK = 4096;        // samples rendered per pull
+const LOOKAHEAD = 0.3;     // seconds of audio scheduled ahead of the clock
+
+const wasm = await createZXTune();
+const buffer = wasm._malloc(CHUNK * 4);   // int16 stereo
+const ctx = new AudioContext();
+
+let player = null;
+let nextTime = 0;
+let timer = 0;
+
+const $ = id => document.getElementById(id);
+
+function stop() {
+  clearInterval(timer);
+  timer = 0;
+  player?.delete();
+  player = null;
+  $('stop').disabled = true;
+}
+
+function pump() {
+  while (nextTime < ctx.currentTime + LOOKAHEAD) {
+    const more = player.render(buffer, CHUNK);
+    const pcm = wasm.HEAP16.subarray(buffer >> 1, (buffer >> 1) + CHUNK * 2);
+    const block = ctx.createBuffer(2, CHUNK, ctx.sampleRate);
+    const left = block.getChannelData(0), right = block.getChannelData(1);
+    for (let i = 0; i < CHUNK; ++i) {
+      left[i] = pcm[2 * i] / 32768;
+      right[i] = pcm[2 * i + 1] / 32768;
+    }
+    const source = ctx.createBufferSource();
+    source.buffer = block;
+    source.connect(ctx.destination);
+    source.start(nextTime);
+    nextTime += CHUNK / ctx.sampleRate;
+    if (!more) {
+      stop();
+      return;
+    }
+  }
+}
+
+$('file').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  stop();
+  $('error').textContent = '';
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const data = wasm._malloc(bytes.length);
+  wasm.HEAPU8.set(bytes, data);
+  let track;
+  try {
+    track = wasm.load(data, bytes.length, '');
+  } catch (err) {
+    $('error').textContent = wasm.getExceptionMessage?.(err)?.join(': ') ?? String(err);
+    return;
+  } finally {
+    wasm._free(data);
+  }
+  const get = name => track.getProperty(name, '');
+  $('info').textContent = [
+    `type:     ${get('Type')}`,
+    `title:    ${get('Title')}`,
+    `author:   ${get('Author')}`,
+    `program:  ${get('Program')}`,
+    `duration: ${(track.getDuration() / 1000).toFixed(1)}s`,
+  ].join('\n');
+
+  await ctx.resume();
+  player = track.createPlayer(ctx.sampleRate);
+  track.delete();
+  nextTime = ctx.currentTime + 0.05;
+  timer = setInterval(pump, 100);
+  $('stop').disabled = false;
+  pump();
+});
+
+$('stop').addEventListener('click', stop);
+</script>
+</body>
+</html>
