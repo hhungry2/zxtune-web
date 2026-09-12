@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#if !defined(_WIN32) && !(defined(__clang__) && (defined(__arm__) || defined(__aarch64__)))
+#if !defined(_WIN32) && !defined(__EMSCRIPTEN__) && !(defined(__clang__) && (defined(__arm__) || defined(__aarch64__)))
 #define __cdecl
 #define __fastcall __attribute__((regparm(3)))
 #endif
