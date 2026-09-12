@@ -10,6 +10,7 @@
 #include "binary/container_factories.h"
 #include "core/data_location.h"
 #include "core/service.h"
+#include "module/additional_files.h"
 #include "module/attributes.h"
 #include "module/holder.h"
 #include "module/players/pipeline.h"
@@ -53,6 +54,13 @@ namespace
   [[noreturn]] void Rethrow(const Error& e)
   {
     throw std::runtime_error(e.GetText());
+  }
+
+  //! Contract violations deep in the parsers arrive as a bare std::exception, which
+  //! reaches javascript as an opaque WebAssembly.Exception. Give it a message instead.
+  [[noreturn]] void RethrowMalformed()
+  {
+    throw std::runtime_error("unsupported or malformed content");
   }
 
   const void* HeapPointer(uint32_t offset)
@@ -229,6 +237,40 @@ namespace
       return std::make_shared<Player>(Holder, samplerate);
     }
 
+    //! Sibling files this module needs before it can be played- an xsf library,
+    //! the streams of a split vgmstream set. Empty for everything self-contained.
+    emscripten::val getAdditionalFiles() const
+    {
+      auto result = emscripten::val::array();
+      if (const auto* const files = dynamic_cast<const Module::AdditionalFiles*>(Holder.get()))
+      {
+        for (const auto& name : files->Enumerate())
+        {
+          result.call<void>("push", name);
+        }
+      }
+      return result;
+    }
+
+    //! @param data heap offset of the named file's content
+    void resolveAdditionalFile(const std::string& name, uint32_t data, uint32_t size)
+    {
+      // the holder owns the resolution state, hence the cast away from the const Ptr
+      auto* const files = const_cast<Module::AdditionalFiles*>(dynamic_cast<const Module::AdditionalFiles*>(Holder.get()));
+      if (!files)
+      {
+        throw std::runtime_error("module needs no additional files");
+      }
+      try
+      {
+        files->Resolve(name, Binary::CreateContainer(Binary::View(HeapPointer(data), size)));
+      }
+      catch (const Error& e)
+      {
+        Rethrow(e);
+      }
+    }
+
   private:
     const Module::Holder::Ptr Holder;
   };
@@ -245,6 +287,10 @@ namespace
     catch (const Error& e)
     {
       Rethrow(e);
+    }
+    catch (const std::exception&)
+    {
+      RethrowMalformed();
     }
   }
 
@@ -263,6 +309,10 @@ namespace
     {
       Rethrow(e);
     }
+    catch (const std::exception&)
+    {
+      RethrowMalformed();
+    }
   }
 }  // namespace
 
@@ -279,7 +329,9 @@ EMSCRIPTEN_BINDINGS(zxtune)
       .smart_ptr<std::shared_ptr<Track>>("TrackPtr")
       .function("getDuration", &Track::getDuration)
       .function("getProperty", &Track::getProperty)
-      .function("createPlayer", &Track::createPlayer);
+      .function("createPlayer", &Track::createPlayer)
+      .function("getAdditionalFiles", &Track::getAdditionalFiles)
+      .function("resolveAdditionalFile", &Track::resolveAdditionalFile);
 
   emscripten::function("load", &load);
   emscripten::function("detect", &detect);

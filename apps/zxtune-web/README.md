@@ -82,6 +82,23 @@ snapshot resolves to subpaths like `RAMP/+81920/+unHRUST1/+51/...`. It returns
 empty arrays rather than throwing when nothing is playable. Pass a `subpath`
 from the result straight back to `load`.
 
+Some formats keep the bulk of a rip in a shared library file - the xsf family
+ships one small file per track referencing a `.usflib` / `.2sflib` / ... . Ask
+the track what it still needs, hand the files over, then play it:
+
+```js
+for (const name of track.getAdditionalFiles()) {      // [] for self-contained modules
+  const extra = await load(name);                      // your own lookup
+  const at = zxtune._malloc(extra.length);
+  zxtune.HEAPU8.set(extra, at);
+  track.resolveAdditionalFile(name, at, extra.length);
+  zxtune._free(at);
+}
+```
+
+Resolving can reveal further dependencies, so re-check `getAdditionalFiles()`
+until it comes back empty.
+
 Not implemented yet
 -------------------
 
