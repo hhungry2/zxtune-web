@@ -45,7 +45,7 @@ namespace
   {
     const auto size = (val.size() - 1) / 2;
     Binary::DataBuilder builder(size);
-    const auto* src = val.begin();
+    const auto* src = val.data();
     for (std::size_t i = 0; i < size; ++i)
     {
       const auto highNibble = FromHex(*++src);

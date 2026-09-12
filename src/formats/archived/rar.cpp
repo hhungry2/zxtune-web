@@ -129,7 +129,7 @@ namespace Formats::Archived
     String DecodeFilename(StringView ascii, Binary::DataInputStream stream)
     {
       static_assert(std::is_unsigned_v<char>);
-      std::basic_string<uint16_t> result;
+      Strings::Utf16String result;
       result.reserve(ascii.size());
       uint_t flag = 0x10000;
       uint8_t highByte = stream.ReadByte();

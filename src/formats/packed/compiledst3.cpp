@@ -88,7 +88,7 @@ namespace Formats::Packed
     {
       // 28 is fixed
       // 27 is title
-      const auto* const titleStart = info.begin() + 28;
+      const auto titleStart = info.begin() + 28;
       return std::none_of(titleStart, info.end(), [](auto c) { return c > ' '; });
     }
   }  // namespace CompiledST3

@@ -12,10 +12,11 @@
 
 #include "string_type.h"
 #include "string_view.h"
+#include "strings/utf16.h"
 
 namespace Strings
 {
   String ToAutoUtf8(StringView str);
 
-  String Utf16ToUtf8(std::basic_string_view<uint16_t> str);
+  String Utf16ToUtf8(Utf16View str);
 }  // namespace Strings

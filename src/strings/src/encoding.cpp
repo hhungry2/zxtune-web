@@ -771,7 +771,7 @@ namespace Strings
   public:
     bool Check(StringView str) const override
     {
-      for (const auto* it = str.begin(); it != str.end(); ++it)
+      for (auto it = str.begin(); it != str.end(); ++it)
       {
         const uint8_t s1 = *it;
         if (s1 == 0x80 || s1 == 0xa0 || s1 >= 0xf0)
@@ -807,7 +807,7 @@ namespace Strings
     {
       std::vector<uint32_t> result;
       result.reserve(str.size());
-      for (const auto* it = str.begin(); it != str.end(); ++it)
+      for (auto it = str.begin(); it != str.end(); ++it)
       {
         const uint8_t s1 = *it;
         if (s1 == 0x5c)
@@ -909,7 +909,7 @@ namespace Strings
       std::vector<uint16_t> aligned(str.size() / 2);
       auto* target = aligned.data();
       std::memcpy(target, str.data(), aligned.size() * sizeof(*target));
-      return Utf16ToUtf8(MakeStringView(target, target + aligned.size()));
+      return Utf16ToUtf8(Utf16View{target, aligned.size()});
     }
     else
     {
@@ -917,13 +917,13 @@ namespace Strings
     }
   }
 
-  String Utf16ToUtf8(std::basic_string_view<uint16_t> str)
+  String Utf16ToUtf8(Utf16View str)
   {
     static const uint16_t BOM = 0xfeff;
     Strings::Utf8Builder builder;
     builder.Reserve(str.size());
     bool needSwap = false;
-    for (const auto* it = str.begin(); it != str.end();)
+    for (auto it = str.begin(); it != str.end();)
     {
       const uint32_t sym = needSwap ? swapBytes(*it) : (*it);
       ++it;
