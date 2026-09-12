@@ -22,3 +22,6 @@ patches-*
 #variables
 /variables.mak
 local.properties
+
+#github pages payload
+/site/dist/
