@@ -509,7 +509,7 @@ try {
   await buildRack();
   requestAnimationFrame(frame);
 } catch (e) {
-  $('boot').textContent = 'Failed to start: ' + e;
+  $('boot').textContent = 'Cannot play here: ' + (e?.message ?? e);
 }
 </script>
 </body>

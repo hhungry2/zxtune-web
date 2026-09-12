@@ -3,8 +3,24 @@
 
 const DEFAULT_BUFFER_SECONDS = 0.4;
 
+// The core reports errors by throwing, so the build needs wasm exception
+// handling; emscripten emits the legacy proposal, which shipped in Chrome 95,
+// Safari 15.2 and Firefox 100. WebAssembly.Exception arrived with it, so it
+// stands in for a feature test and turns an unsupported browser into a
+// sentence rather than a stack trace.
+export function unsupportedReason() {
+  if (typeof WebAssembly !== 'object') return 'this browser has no WebAssembly';
+  if (typeof WebAssembly.Exception !== 'function') {
+    return 'this browser is missing WebAssembly exception handling (needs Chrome 95, Safari 15.2 or Firefox 100)';
+  }
+  if (typeof AudioWorkletNode !== 'function') return 'this browser has no AudioWorklet';
+  return null;
+}
+
 export class ZXTunePlayer {
   static async create({ base = '.', bufferSeconds = DEFAULT_BUFFER_SECONDS } = {}) {
+    const reason = unsupportedReason();
+    if (reason) throw new Error(reason);
     const context = new AudioContext();
     await context.audioWorklet.addModule(`${base}/zxtune-processor.js`);
     return new ZXTunePlayer(context, base, bufferSeconds);
