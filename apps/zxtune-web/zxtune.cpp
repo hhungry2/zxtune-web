@@ -17,6 +17,7 @@
 #include "parameters/container.h"
 #include "parameters/merged_accessor.h"
 #include "sound/chunk.h"
+#include "sound/impl/fft_analyzer.h"
 #include "sound/sample.h"
 
 #include "error.h"
@@ -187,7 +188,28 @@ namespace
         rest -= got;
       }
       std::fill_n(out, rest, Sound::Sample());
+      // the spectrum costs an fft per chunk, so it is only maintained while
+      // javascript keeps asking for it. No locking here- unlike the jni layer
+      // there is no second thread, render and analyze share one caller.
+      if (Analyzer && IdleRenders++ < IDLE_RENDERS_LIMIT)
+      {
+        Analyzer->FeedSound(reinterpret_cast<const Sound::Sample*>(static_cast<uintptr_t>(target)), samples);
+      }
       return rest == 0;
+    }
+
+    //! Writes maxEntries spectrum levels, one byte each in 0..100, at the given heap offset.
+    //! Levels are zero until the first chunk has been rendered with the analyzer awake.
+    uint32_t analyze(uint32_t levels, uint32_t maxEntries)
+    {
+      if (!Analyzer)
+      {
+        Analyzer = Sound::FFTAnalyzer::Create();
+      }
+      IdleRenders = 0;
+      auto* const target = reinterpret_cast<Sound::Analyzer::LevelType*>(static_cast<uintptr_t>(levels));
+      Analyzer->GetSpectrum(target, maxEntries);
+      return maxEntries;
     }
 
     uint32_t getPosition() const
@@ -207,12 +229,22 @@ namespace
       Options->SetValue(name, StringView{value});
     }
 
+    //! Parameters::IntType is 64 bit; a double keeps it a plain javascript number
+    void setIntProperty(const std::string& name, double value)
+    {
+      Options->SetValue(name, static_cast<Parameters::IntType>(value));
+    }
+
   private:
+    static const uint32_t IDLE_RENDERS_LIMIT = 10;
+
     const Module::Holder::Ptr Holder;
     const Parameters::Container::Ptr Options;
     const Module::Renderer::Ptr Renderer;
     Sound::Chunk Buffer;
     std::size_t Position = 0;
+    Sound::FFTAnalyzer::Ptr Analyzer;
+    uint32_t IdleRenders = 0;
   };
 
   class Track
@@ -294,6 +326,29 @@ namespace
     }
   }
 
+  //! Library-wide parameters, shared by every player created afterwards.
+  //! Names live in src/sound/sound_parameters.h and src/core/core_parameters.h.
+  std::string getOption(const std::string& name, const std::string& defVal)
+  {
+    return GlobalOptions()->FindString(name).value_or(defVal);
+  }
+
+  void setOption(const std::string& name, const std::string& value)
+  {
+    GlobalOptions()->SetValue(name, StringView{value});
+  }
+
+  double getIntOption(const std::string& name, double defVal)
+  {
+    const auto found = GlobalOptions()->FindInteger(name);
+    return found ? static_cast<double>(*found) : defVal;
+  }
+
+  void setIntOption(const std::string& name, double value)
+  {
+    GlobalOptions()->SetValue(name, static_cast<Parameters::IntType>(value));
+  }
+
   //! Lists every module inside the content, plus any cover art found along the way.
   //! Unlike load() this does not throw when nothing is playable- the arrays come back empty.
   emscripten::val detect(uint32_t data, uint32_t size)
@@ -323,7 +378,9 @@ EMSCRIPTEN_BINDINGS(zxtune)
       .function("render", &Player::render)
       .function("seek", &Player::seek)
       .function("getPosition", &Player::getPosition)
-      .function("setProperty", &Player::setProperty);
+      .function("setProperty", &Player::setProperty)
+      .function("setIntProperty", &Player::setIntProperty)
+      .function("analyze", &Player::analyze);
 
   emscripten::class_<Track>("Track")
       .smart_ptr<std::shared_ptr<Track>>("TrackPtr")
@@ -335,4 +392,9 @@ EMSCRIPTEN_BINDINGS(zxtune)
 
   emscripten::function("load", &load);
   emscripten::function("detect", &detect);
+
+  emscripten::function("getOption", &getOption);
+  emscripten::function("setOption", &setOption);
+  emscripten::function("getIntOption", &getIntOption);
+  emscripten::function("setIntOption", &setIntOption);
 }

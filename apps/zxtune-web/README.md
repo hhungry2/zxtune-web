@@ -99,8 +99,34 @@ for (const name of track.getAdditionalFiles()) {      // [] for self-contained m
 Resolving can reveal further dependencies, so re-check `getAdditionalFiles()`
 until it comes back empty.
 
+For a visualizer, ask the player for a spectrum. It writes one byte per band,
+each `0..100`:
+
+```js
+const levels = zxtune._malloc(32);
+player.analyze(levels, 32);                       // wakes the analyzer up
+const bands = zxtune.HEAPU8.subarray(levels, levels + 32);
+```
+
+The fft only runs while javascript keeps calling `analyze`; stop asking and
+rendering goes back to costing nothing extra. Note this is the decoder's own
+spectrum - for a visualizer driven by what actually reaches the speakers, a
+WebAudio `AnalyserNode` on the output node is cheaper, since it runs natively.
+
+Library-wide parameters, shared by every player created afterwards:
+
+```js
+zxtune.setOption('zxtune.core.aym.interpolation', 'lq');
+zxtune.setIntOption('zxtune.sound.loop', 1);
+zxtune.getOption('name', 'default');
+zxtune.getIntOption('name', 0);
+```
+
+Per-player parameters go through `player.setProperty` / `setIntProperty`.
+Names live in `src/sound/sound_parameters.h` and `src/core/core_parameters.h`.
+
 Not implemented yet
 -------------------
 
-- spectrum analyzer (`Player::Analyze` in the jni layer)
-- global options accessor
+- playback of an actual multi-file rip is untested; only the enumerate and
+  resolve mechanics are covered, against synthesized fixtures
