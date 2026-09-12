@@ -6,8 +6,11 @@
  *
  **/
 
+#include "analysis/path.h"
 #include "binary/container_factories.h"
+#include "core/data_location.h"
 #include "core/service.h"
+#include "module/attributes.h"
 #include "module/holder.h"
 #include "module/players/pipeline.h"
 #include "parameters/container.h"
@@ -51,6 +54,96 @@ namespace
   {
     throw std::runtime_error(e.GetText());
   }
+
+  const void* HeapPointer(uint32_t offset)
+  {
+    return reinterpret_cast<const void*>(static_cast<uintptr_t>(offset));
+  }
+
+  std::string Property(const Parameters::Accessor& props, Parameters::Identifier name)
+  {
+    return props.FindString(name).value_or(std::string{});
+  }
+
+  //! Shape of one entry reported by detect(), also used for the picture payloads
+  emscripten::val Describe(StringView subpath, const Module::Holder& holder)
+  {
+    auto entry = emscripten::val::object();
+    entry.set("subpath", std::string{subpath});
+    const auto props = holder.GetModuleProperties();
+    entry.set("type", Property(*props, Module::ATTR_TYPE));
+    entry.set("title", Property(*props, Module::ATTR_TITLE));
+    entry.set("author", Property(*props, Module::ATTR_AUTHOR));
+    entry.set("program", Property(*props, Module::ATTR_PROGRAM));
+    // keep it a plain number- a 64 bit value would reach javascript as a BigInt
+    entry.set("durationMs", static_cast<uint32_t>(holder.GetModuleInformation().Duration.Get()));
+    return entry;
+  }
+
+  //! Walks everything inside a container and reports every module it can play.
+  class Collector : public Module::DetectCallback
+  {
+  public:
+    Collector()
+      : Tracks(emscripten::val::array())
+      , Pictures(emscripten::val::array())
+    {}
+
+    Parameters::Container::Ptr CreateInitialProperties(StringView /*subpath*/) const override
+    {
+      return Parameters::Container::Create();
+    }
+
+    void ProcessModule(const ZXTune::DataLocation& location, const ZXTune::Plugin& /*decoder*/,
+                       Module::Holder::Ptr holder) override
+    {
+      Tracks.call<void>("push", Describe(location.GetPath()->AsString(), *holder));
+    }
+
+    void ProcessUnknownData(const ZXTune::DataLocation& location) override
+    {
+      const auto raw = location.GetData();
+      const auto data = Binary::View(*raw);
+      if (data.Size() > MAX_PICTURE_SIZE || !IsPicture(data))
+      {
+        return;
+      }
+      auto entry = emscripten::val::object();
+      entry.set("subpath", location.GetPath()->AsString());
+      // typed_memory_view aliases the heap, the Uint8Array constructor copies it out
+      const auto view = emscripten::typed_memory_view(data.Size(), static_cast<const uint8_t*>(data.Start()));
+      entry.set("data", emscripten::val::global("Uint8Array").new_(view));
+      Pictures.call<void>("push", entry);
+    }
+
+    Log::ProgressCallback* GetProgress() const override
+    {
+      return nullptr;
+    }
+
+    emscripten::val Release()
+    {
+      auto result = emscripten::val::object();
+      result.set("tracks", Tracks);
+      result.set("pictures", Pictures);
+      return result;
+    }
+
+  private:
+    static const std::size_t MAX_PICTURE_SIZE = 2 * 1048576;
+
+    static bool IsPicture(Binary::View data)
+    {
+      static const uint8_t PNG[] = {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a};
+      static const uint8_t JPEG[] = {0xff, 0xd8, 0xff};
+      const auto* const start = static_cast<const uint8_t*>(data.Start());
+      return (data.Size() > sizeof(PNG) && 0 == std::memcmp(start, PNG, sizeof(PNG)))
+             || (data.Size() > sizeof(JPEG) && 0 == std::memcmp(start, JPEG, sizeof(JPEG)));
+    }
+
+    emscripten::val Tracks;
+    emscripten::val Pictures;
+  };
 
   class Player
   {
@@ -145,10 +238,26 @@ namespace
   {
     try
     {
-      auto content = Binary::CreateContainer(
-          Binary::View(reinterpret_cast<const void*>(static_cast<uintptr_t>(data)), size));
+      auto content = Binary::CreateContainer(Binary::View(HeapPointer(data), size));
       return std::make_shared<Track>(
           Service().OpenModule(std::move(content), subpath, Parameters::Container::Create()));
+    }
+    catch (const Error& e)
+    {
+      Rethrow(e);
+    }
+  }
+
+  //! Lists every module inside the content, plus any cover art found along the way.
+  //! Unlike load() this does not throw when nothing is playable- the arrays come back empty.
+  emscripten::val detect(uint32_t data, uint32_t size)
+  {
+    try
+    {
+      auto content = Binary::CreateContainer(Binary::View(HeapPointer(data), size));
+      Collector collector;
+      Service().DetectModules(std::move(content), collector);
+      return collector.Release();
     }
     catch (const Error& e)
     {
@@ -173,4 +282,5 @@ EMSCRIPTEN_BINDINGS(zxtune)
       .function("createPlayer", &Track::createPlayer);
 
   emscripten::function("load", &load);
+  emscripten::function("detect", &detect);
 }
