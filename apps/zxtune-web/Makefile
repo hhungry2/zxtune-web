@@ -15,7 +15,7 @@ libraries.common = analysis \
 
 libraries.3rdparty = asap atrac9 ffmpeg FLAC gme he ht hvl lazyusf2 lhasa lzma mpg123 ogg openmpt opus mgba sidplayfp snesspc sseqplayer unrar v2m vgm vgmstream vio2sf vorbis xmp z80ex zlib
 
-ld_flags += -lembind -sEXPORT_NAME=createZXTune -sENVIRONMENT=web,worker,node \
+ld_flags += -sFILESYSTEM=0 --closure 1 -lembind -sEXPORT_NAME=createZXTune -sENVIRONMENT=web,worker,node \
             -sEXPORTED_FUNCTIONS=_malloc,_free \
             -sEXPORTED_RUNTIME_METHODS=HEAP16,HEAPU8,getExceptionMessage
 

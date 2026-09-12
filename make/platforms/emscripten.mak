@@ -23,6 +23,10 @@ postlink_cmd = true
 # -g is unconditionally added by compilers/clang.mak, dwarf in wasm costs tens of megabytes
 emscripten.cxx.flags += -g0
 
+# there is 12x realtime of headroom in the worst measured case, so trade speed for
+# size: -Oz costs 16-24% of render throughput and takes 23% off the wasm
+emscripten.cxx.flags += -Oz -fno-unroll-loops
+
 # core reports all the errors via exceptions, so this is mandatory, not optional.
 # wasm sjlj is implied by wasm exceptions and is required by several 3rdparty c libraries
 emscripten.cxx.flags += -fwasm-exceptions
@@ -35,7 +39,7 @@ emscripten.ld.flags += -sALLOW_MEMORY_GROWTH=1 -sSTACK_SIZE=1MB
 emscripten.ld.flags += -sMODULARIZE=1 -sEXPORT_ES6=1
 
 ifdef release
-emscripten.ld.flags += -O2
+emscripten.ld.flags += -Oz
 endif
 
 # libc++ bounded iterators make fmt-9 compile-time format string check non-constexpr,
