@@ -64,6 +64,28 @@ namespace
     throw std::runtime_error("unsupported or malformed content");
   }
 
+  //! Core failures can surface long after the call that caused them- an xsf holder
+  //! resolves its libraries on first use, so a missing one throws out of getProperty
+  //! rather than out of load. Anything that can reach core code goes through here,
+  //! otherwise the raw Error crosses embind and javascript sees WebAssembly.Exception
+  //! with nothing readable on it.
+  template<class Fun>
+  auto Guarded(Fun&& fun) -> decltype(fun())
+  {
+    try
+    {
+      return fun();
+    }
+    catch (const Error& e)
+    {
+      Rethrow(e);
+    }
+    catch (const std::exception&)
+    {
+      RethrowMalformed();
+    }
+  }
+
   const void* HeapPointer(uint32_t offset)
   {
     return reinterpret_cast<const void*>(static_cast<uintptr_t>(offset));
@@ -168,6 +190,7 @@ namespace
     //! @return false if the module is over- the rest of the buffer is silence
     bool render(uint32_t target, uint32_t samples)
     {
+      return Guarded([&] {
       auto* out = reinterpret_cast<Sound::Sample*>(static_cast<uintptr_t>(target));
       auto rest = samples;
       while (rest != 0)
@@ -196,6 +219,7 @@ namespace
         Analyzer->FeedSound(reinterpret_cast<const Sound::Sample*>(static_cast<uintptr_t>(target)), samples);
       }
       return rest == 0;
+      });
     }
 
     //! Writes maxEntries spectrum levels, one byte each in 0..100, at the given heap offset.
@@ -219,9 +243,11 @@ namespace
 
     void seek(uint32_t position)
     {
-      Renderer->SetPosition(Time::Instant<TimeBase>(position));
-      Buffer = Sound::Chunk();
-      Position = 0;
+      Guarded([&] {
+        Renderer->SetPosition(Time::Instant<TimeBase>(position));
+        Buffer = Sound::Chunk();
+        Position = 0;
+      });
     }
 
     void setProperty(const std::string& name, const std::string& value)
@@ -256,32 +282,34 @@ namespace
 
     uint32_t getDuration() const
     {
-      return Holder->GetModuleInformation().Duration.Get();
+      return Guarded([this] { return static_cast<uint32_t>(Holder->GetModuleInformation().Duration.Get()); });
     }
 
     std::string getProperty(const std::string& name, const std::string& defVal) const
     {
-      return Holder->GetModuleProperties()->FindString(name).value_or(defVal);
+      return Guarded([&] { return Holder->GetModuleProperties()->FindString(name).value_or(defVal); });
     }
 
     std::shared_ptr<Player> createPlayer(uint32_t samplerate) const
     {
-      return std::make_shared<Player>(Holder, samplerate);
+      return Guarded([&] { return std::make_shared<Player>(Holder, samplerate); });
     }
 
     //! Sibling files this module needs before it can be played- an xsf library,
     //! the streams of a split vgmstream set. Empty for everything self-contained.
     emscripten::val getAdditionalFiles() const
     {
-      auto result = emscripten::val::array();
-      if (const auto* const files = dynamic_cast<const Module::AdditionalFiles*>(Holder.get()))
-      {
-        for (const auto& name : files->Enumerate())
+      return Guarded([this] {
+        auto result = emscripten::val::array();
+        if (const auto* const files = dynamic_cast<const Module::AdditionalFiles*>(Holder.get()))
         {
-          result.call<void>("push", name);
+          for (const auto& name : files->Enumerate())
+          {
+            result.call<void>("push", name);
+          }
         }
-      }
-      return result;
+        return result;
+      });
     }
 
     //! @param data heap offset of the named file's content
@@ -293,14 +321,7 @@ namespace
       {
         throw std::runtime_error("module needs no additional files");
       }
-      try
-      {
-        files->Resolve(name, Binary::CreateContainer(Binary::View(HeapPointer(data), size)));
-      }
-      catch (const Error& e)
-      {
-        Rethrow(e);
-      }
+      Guarded([&] { files->Resolve(name, Binary::CreateContainer(Binary::View(HeapPointer(data), size))); });
     }
 
   private:
