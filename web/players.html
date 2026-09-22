@@ -7,6 +7,8 @@
 <meta name="description" content="ZXTuneの4つのプレイヤー — Web (ブラウザ) / QT (デスクトップ) / Android (モバイル) / zxtune123 (CLI) を徹底比較。機能、対応フォーマット、使い方を解説。">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2300FFD1'/><text x='16' y='22' text-anchor='middle' font-family='monospace' font-weight='800' font-size='18' fill='%23071118'>Z</text></svg>">
 <link rel="stylesheet" href="css/style.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#070A12">
 </head>
 <body>
 <div class="bg-grid"></div><div class="bg-glow"></div><div class="bg-noise"></div>
@@ -26,11 +28,11 @@
 
 <div class="container" style="margin-top:20px;display:grid;gap:16px">
   <!-- Web -->
-  <div class="detail-hero">
+  <div class="detail-hero" id="web">
     <div class="detail-head">
       <div class="detail-icon">🌐</div>
-      <div class="detail-title"><h1>ZXTune Web <span style="font-family:'JetBrains Mono',monospace;font-size:14px;padding:4px 8px;border-radius:999px;background:rgba(0,255,209,.14);border:1px solid rgba(0,255,209,.22);color:var(--cyan)">NEW • WASM</span></h1><p>ブラウザだけで完結 • インストール不要 • PWA対応 • オフライン再生</p></div>
-      <div class="detail-stats"><span><b>48kHz</b>合成</span><span><b>0秒</b>起動</span><span><b>WASM</b>コア</span></div>
+      <div class="detail-title"><h1>ZXTune Web <span style="font-family:'JetBrains Mono',monospace;font-size:14px;padding:4px 8px;border-radius:999px;background:rgba(0,255,209,.14);border:1px solid rgba(0,255,209,.22);color:var(--cyan)">NEW • WASM</span></h1><p>ブラウザだけで完結 • インストール不要 • PWA対応 • 開いた曲はオフラインでも再生</p></div>
+      <div class="detail-stats"><span><b>AudioWorklet</b>合成</span><span><b>インストール</b>不要</span><span><b>WASM</b>コア</span></div>
     </div>
     <div class="detail-body">
       <div class="detail-prose">
@@ -43,13 +45,15 @@
         </ol>
         <h3>Webならではの機能</h3>
         <ul style="margin:0;padding-left:18px;display:grid;gap:6px">
-          <li><b>URL共有</b> — zxtunes.comやHVSCへの直リンクで即再生（対応予定）</li>
-          <li><b>チャンネルミュート</b> — A/B/Cをクリックでソロ/ミュート、作曲技法の学習に</li>
+          <li><b>URL読み込み・共有</b> — GitHub や ModArchive など、ブラウザからの読み込み (CORS) を許可するサイトの曲を URL で開けます。<code>player.html?url=…</code> で共有も (zxtunes.com / HVSC は CORS 非対応のため不可)</li>
+          <li><b>チャンネルミュート</b> — A/B/Cをクリックでミュート (AY 系のチャンネル割り当て)、作曲技法の学習に</li>
           <li><b>ビジュアライザ切替</b> — スペクトラム ↔ オシロスコープ（キャンバスクリック）</li>
           <li><b>PWA</b> — ホーム画面に追加でネイティブアプリのように動作</li>
+          <li><b>メディアキー</b> — キーボードのメディアキーやロック画面から再生 / 一時停止 / 曲送り</li>
+          <li><b>XSPF</b> — zxtune-qt と同じ形式のプレイリストを保存・読み込み</li>
         </ul>
         <h3>技術スタック</h3>
-        <p><code>emscripten</code> + <code>AudioWorklet</code> + <code>WebAssembly</code> + <code>Canvas 2D</code>。メインスレッドをブロックせず、48kHz / 32bit float / cubic補間で合成。</p>
+        <p><code>emscripten</code> + <code>AudioWorklet</code> + <code>WebAssembly</code> + <code>Canvas 2D</code>。メインスレッドをブロックせず、出力デバイスのサンプリング周波数で合成 (補間は高品質 / 低品質 / なし)。</p>
       </div>
       <div class="detail-side">
         <div class="info-box"><h4>クイックスタート</h4>
@@ -86,7 +90,7 @@
         <p><code>https://zxtune.ru</code> からバイナリを取得、または <code>make -C apps/zxtune-qt</code> でビルド。依存はQt5/6とzlibのみ。</p>
       </div>
       <div class="detail-side">
-        <div class="info-box"><h4>入手方法</h4><dl><dt>公式</dt><dd><a href="https://zxtune.ru" target="_blank" style="color:var(--cyan)">zxtune.ru</a></dd><dt>ソース</dt><dd><a href="https://github.com/vitamin-caig/zxtune" target="_blank" style="color:var(--cyan)">GitHub</a></dd><dt>対応OS</dt><dd>Windows 7+ / Linux / macOS</dd><dt>ライセンス</dt><dd>GPL / MIT</dd></dl><a class="btn btn-ghost" href="https://github.com/vitamin-caig/zxtune" target="_blank" style="width:100%;justify-content:center;margin-top:10px">GitHubで見る</a></div>
+        <div class="info-box"><h4>入手方法</h4><dl><dt>公式</dt><dd><a href="https://zxtune.ru" target="_blank" style="color:var(--cyan)">zxtune.ru</a></dd><dt>ソース</dt><dd><a href="https://github.com/vitamin-caig/zxtune" target="_blank" style="color:var(--cyan)">GitHub</a></dd><dt>対応OS</dt><dd>Windows 7+ / Linux / macOS</dd><dt>ライセンス</dt><dd>LGPL-3.0</dd></dl><a class="btn btn-ghost" href="https://github.com/vitamin-caig/zxtune" target="_blank" style="width:100%;justify-content:center;margin-top:10px">GitHubで見る</a></div>
         <div class="try-box"><h4>💡 Tip</h4><p>TRD/SCL内の全曲をプレイリストに一括追加 → 検索で絞り込み → 一括変換でMP3化、が定番ワークフロー。</p></div>
       </div>
     </div>
@@ -96,7 +100,7 @@
   <div class="detail-hero">
     <div class="detail-head">
       <div class="detail-icon" style="background:linear-gradient(135deg, rgba(0,255,136,.18), rgba(0,229,255,.12))">📱</div>
-      <div class="detail-title"><h1>ZXTune Android <span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:999px;background:rgba(0,255,136,.14);border:1px solid rgba(0,255,136,.22);color:#6EFFB8">MOBILE • 50k+ DL</span></h1><p>Android 4.1+ • オンラインカタログ統合 • ウィジェット / 着信音</p></div>
+      <div class="detail-title"><h1>ZXTune Android <span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:999px;background:rgba(0,255,136,.14);border:1px solid rgba(0,255,136,.22);color:#6EFFB8">MOBILE • 100K+ DL (Google Play)</span></h1><p>Android 4.1+ • オンラインカタログ統合 • ウィジェット / 着信音</p></div>
       <div class="detail-stats"><span><b>11+</b>カタログ</span><span><b>xxhdpi</b>対応</span><span><b>4.1+</b>Android</span></div>
     </div>
     <div class="detail-body">
@@ -161,8 +165,8 @@
           <tr style="border-top:1px solid var(--border)"><td style="padding:10px 12px;color:var(--text)">対応フォーマット</td><td style="padding:10px 12px;text-align:center">107</td><td style="padding:10px 12px;text-align:center">107</td><td style="padding:10px 12px;text-align:center">107</td><td style="padding:10px 12px;text-align:center">107</td></tr>
           <tr style="border-top:1px solid rgba(255,255,255,.04)"><td style="padding:10px 12px;color:var(--text)">プレイリスト</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">◎ 高機能</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">—</td></tr>
           <tr style="border-top:1px solid rgba(255,255,255,.04)"><td style="padding:10px 12px;color:var(--text)">ZIP/TRD自動展開</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">○</td></tr>
-          <tr style="border-top:1px solid rgba(255,255,255,.04)"><td style="padding:10px 12px;color:var(--text)">変換 (WAV/MP3)</td><td style="padding:10px 12px;text-align:center">△ (WAV)</td><td style="padding:10px 12px;text-align:center">◎</td><td style="padding:10px 12px;text-align:center">—</td><td style="padding:10px 12px;text-align:center">○</td></tr>
-          <tr style="border-top:1px solid rgba(255,255,255,.04)"><td style="padding:10px 12px;color:var(--text)">オンラインカタログ</td><td style="padding:10px 12px;text-align:center">△ (予定)</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">◎</td><td style="padding:10px 12px;text-align:center">—</td></tr>
+          <tr style="border-top:1px solid rgba(255,255,255,.04)"><td style="padding:10px 12px;color:var(--text)">変換 (WAV/MP3)</td><td style="padding:10px 12px;text-align:center">—</td><td style="padding:10px 12px;text-align:center">◎</td><td style="padding:10px 12px;text-align:center">—</td><td style="padding:10px 12px;text-align:center">○</td></tr>
+          <tr style="border-top:1px solid rgba(255,255,255,.04)"><td style="padding:10px 12px;color:var(--text)">オンラインカタログ</td><td style="padding:10px 12px;text-align:center">△ (URL読み込み)</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">◎</td><td style="padding:10px 12px;text-align:center">—</td></tr>
           <tr style="border-top:1px solid rgba(255,255,255,.04)"><td style="padding:10px 12px;color:var(--text)">可視化</td><td style="padding:10px 12px;text-align:center">Spectrum+Scope</td><td style="padding:10px 12px;text-align:center">Spectrum</td><td style="padding:10px 12px;text-align:center">Spectrum</td><td style="padding:10px 12px;text-align:center">—</td></tr>
           <tr style="border-top:1px solid rgba(255,255,255,.04)"><td style="padding:10px 12px;color:var(--text)">インストール</td><td style="padding:10px 12px;text-align:center">不要</td><td style="padding:10px 12px;text-align:center">要</td><td style="padding:10px 12px;text-align:center">要</td><td style="padding:10px 12px;text-align:center">要</td></tr>
         </tbody>
@@ -177,7 +181,7 @@
 </div>
 
 <footer class="footer">
-  <div class="container"><div class="footer-bottom"><span>© 2009–2026 ZXTune • Players Guide</span><span class="mono"><a href="index.html" style="color:var(--cyan)">← ホーム</a></span></div></div>
+  <div class="container"><div class="footer-bottom"><span>© 2008–2026 ZXTune • Players Guide</span><span class="mono"><a href="index.html" style="color:var(--cyan)">← ホーム</a></span></div></div>
 </footer>
 </body>
 </html>

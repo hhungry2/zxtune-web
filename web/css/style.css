@@ -520,3 +520,8 @@ img{max-width:100%}
 .url-dialog input:focus{border-color:var(--cyan)}
 .url-dialog p{margin:0;color:var(--muted);font-size:12px;line-height:1.6}
 .url-dialog-actions{display:flex;justify-content:flex-end;gap:8px}
+
+/* fullscreen player (player.js) */
+.player-main:fullscreen{width:100vw;height:100vh;box-sizing:border-box;border-radius:0;border:0;background:var(--bg);overflow:auto}
+.player-main:fullscreen .player-vis{flex:1 1 auto;height:auto;min-height:40vh}
+#engineLog div{white-space:pre-wrap;word-break:break-word}

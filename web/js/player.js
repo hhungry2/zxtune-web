@@ -39,7 +39,7 @@ let tracks=[];            // {title, author, format, chip, icon, ext, durationMs
 let current=null;         // the entry shown in the player
 let opened=null;          // the entry the engine has open
 let openToken=0;
-let player=null, gain=null, analyser=null, dcBlock=null;
+let player=null, gain=null, analyser=null, dcBlock=null, mediaOut=null;
 let playing=false, posMs=0;
 let chanMute=[false,false,false];
 let loopMode=0; //0 none,1 one,2 all
@@ -85,6 +85,7 @@ function setPlayButton(){
   for(const id of ['btnPlay','btnPlay2']){
     const b=document.getElementById(id); if(b) b.textContent= playing ? '⏸' : '▶';
   }
+  updateMediaState();
 }
 
 function loopLabel(){ return loopMode===1?'1曲':loopMode===2?'全曲':'なし'; }
@@ -134,6 +135,8 @@ function showTrack(t){
   setText(els.infoFormat, `${t.format} (${t.ext})`);
   setText(els.infoChip, t.chip);
   setText(els.infoDur, `${fmt(t.durationMs)} • ループ: ${loopLabel()}`);
+  setText(document.getElementById('chipInfo'), t.chip);
+  updateMediaMetadata(t);
 }
 
 function syncDocumentTitle(){
@@ -171,10 +174,13 @@ async function openInEngine(t){
 
 async function startPlayback(){
   if(!player || !current) return;
-  if(!await openInEngine(current)) { playing=false; setPlayButton(); return; }
+  const out=playMediaOut();
+  if(!await openInEngine(current)) { playing=false; mediaOut?.pause(); setPlayButton(); return; }
   await player.play();
+  await out;
   playing=true;
   setPlayButton(); syncDocumentTitle(); updateProgress();
+  if(startPlayback.logged!==current){ startPlayback.logged=current; logLine(`▶ ${current.title} — ${current.format}`); }
 }
 
 window.selectTrack=async (i, autoplay=false)=>{
@@ -197,6 +203,7 @@ async function togglePlay(){
   if(!current) return;
   if(playing){
     await player.pause();
+    mediaOut?.pause();
     playing=false;
     setPlayButton(); syncDocumentTitle();
   } else {
@@ -212,6 +219,7 @@ function onEnded(){
   } else {
     playing=false;
     player.pause();
+    mediaOut?.pause();
     opened=null;               // the engine ran off the end; reopen on the next Play
     posMs=current?.durationMs||0;
     setPlayButton(); syncDocumentTitle(); updateProgress();
@@ -223,6 +231,7 @@ function seekTo(ms){
   posMs=Math.max(0, Math.min(current.durationMs||0, ms));
   if(player && opened===current) player.seek(posMs);
   updateProgress();
+  updatePositionState();
 }
 
 function indexOfCurrent(){ return Math.max(0, tracks.indexOf(current)); }
@@ -278,19 +287,39 @@ function bindControls(){
     if(gain) gain.gain.value=v/100;
     if(vol) vol.value=v;
     if(vol2) vol2.value=v;
-    const m=document.getElementById('btnMute2'); if(m) m.textContent= Number(v)===0 ? '🔇' : '🔊';
+    for(const id of ['btnMute','btnMute2']){ const m=document.getElementById(id); if(m) m.textContent= Number(v)===0 ? '🔇' : '🔊'; }
   }
   if(vol) vol.oninput=e=>applyVol(e.target.value);
   if(vol2) vol2.oninput=e=>applyVol(e.target.value);
-  const bMute=document.getElementById('btnMute2');
-  if(bMute) bMute.onclick=()=>{
-    const v=Number((vol2||vol)?.value ?? 84);
-    if(v>0){ lastVol=v; applyVol(0); } else applyVol(lastVol||84);
-  };
+  for(const id of ['btnMute','btnMute2']){
+    const bMute=document.getElementById(id);
+    if(bMute) bMute.onclick=()=>{
+      const v=Number((vol2||vol)?.value ?? 84);
+      if(v>0){ lastVol=v; applyVol(0); } else applyVol(lastVol||84);
+    };
+  }
   bindControls.applyVol=()=>applyVol((vol||vol2)?.value ?? 84);
 
   const search=document.getElementById('search');
   if(search) search.oninput=renderPlaylist;
+
+  // fullscreen: the player card only; hidden where the browser has no element fullscreen
+  const bFull=document.getElementById('btnFullscreen');
+  const stage=bFull?.closest('.player-main');
+  if(bFull && stage){
+    if(!document.fullscreenEnabled) bFull.style.display='none';
+    else{
+      bFull.onclick=()=>{
+        if(document.fullscreenElement) document.exitFullscreen();
+        else stage.requestFullscreen().catch(e=>toast(`フルスクリーンにできません: ${e.message}`, '⚠️'));
+      };
+      document.addEventListener('fullscreenchange', ()=>{
+        const on=document.fullscreenElement===stage;
+        bFull.textContent= on ? '🗗' : '⛶';
+        bFull.title= on ? 'フルスクリーン解除' : 'フルスクリーン';
+      });
+    }
+  }
 
   // progress seek
   [document.getElementById('progress'), document.getElementById('progress2')].forEach(p=>{
@@ -339,6 +368,115 @@ function bindControls(){
   });
 }
 
+// --- media keys, lock screen --------------------------------------------------
+// Browsers hand media keys, the lock screen and the OS media overlay only to a
+// page that plays a media element, so the output reaches the speakers through
+// one: the graph ends in a MediaStream that an <audio> element plays.
+const mediaSession='mediaSession' in navigator ? navigator.mediaSession : null;
+let lastPositionReport=0;
+
+function connectSpeakers(ctx){
+  if(mediaSession && typeof ctx.createMediaStreamDestination==='function'){
+    try{
+      const dest=ctx.createMediaStreamDestination();
+      gain.connect(dest);
+      mediaOut=new Audio();
+      mediaOut.srcObject=dest.stream;
+      return;
+    }catch(e){ console.warn('no media element output', e); }
+  }
+  gain.connect(ctx.destination);
+}
+
+// Started inside the click that asked for playback, as some browsers insist.
+// Should the element refuse, the graph goes straight to the speakers instead.
+async function playMediaOut(){
+  if(!mediaOut) return;
+  try{ await mediaOut.play(); }
+  catch(e){
+    console.warn('media element refused to play', e);
+    gain.disconnect();
+    gain.connect(player.context.destination);
+    mediaOut=null;
+  }
+}
+
+function updateMediaMetadata(t){
+  if(!mediaSession || typeof MediaMetadata!=='function') return;
+  mediaSession.metadata=new MediaMetadata({
+    title:t.title,
+    artist:t.author||'',
+    album:[t.format, t.chip].filter(Boolean).join(' • '),
+    artwork:[{src:new URL('icon-512.png', document.baseURI).href, sizes:'512x512', type:'image/png'}],
+  });
+}
+
+function updatePositionState(){
+  if(!mediaSession || typeof mediaSession.setPositionState!=='function') return;
+  lastPositionReport=performance.now();
+  const duration=(current?.durationMs||0)/1000;
+  try{
+    if(duration>0) mediaSession.setPositionState({duration, position:Math.min(posMs/1000, duration), playbackRate:1});
+    else mediaSession.setPositionState();
+  }catch{}
+}
+
+function updateMediaState(){
+  if(!mediaSession) return;
+  mediaSession.playbackState= !current ? 'none' : playing ? 'playing' : 'paused';
+  updatePositionState();
+}
+
+function bindMediaSession(){
+  if(!mediaSession) return;
+  const on=(action, handler)=>{ try{ mediaSession.setActionHandler(action, handler); }catch{} };
+  on('play', ()=>{ if(!playing) togglePlay(); });
+  on('pause', ()=>{ if(playing) togglePlay(); });
+  on('stop', ()=>{ if(playing) togglePlay(); seekTo(0); });
+  on('previoustrack', prevTrack);
+  on('nexttrack', nextTrack);
+  on('seekbackward', d=>seekTo(posMs-(d?.seekOffset||10)*1000));
+  on('seekforward', d=>seekTo(posMs+(d?.seekOffset||10)*1000));
+  on('seekto', d=>{ if(Number.isFinite(d?.seekTime)) seekTo(d.seekTime*1000); });
+}
+
+// --- what the page tells about the engine ---------------------------------------
+const INTERP_LABEL={default:'補間: 既定', hq:'補間: 高品質', lq:'補間: 低品質', none:'補間なし'};
+const engineLog=document.getElementById('engineLog');
+
+function updateEngineInfo(){
+  const rate=player ? `${+(player.context.sampleRate/1000).toFixed(1)}kHz` : '—';
+  const out=settings.layout===6 ? 'Mono' : 'Stereo';
+  setText(document.getElementById('engineInfo'), `${rate} • ${INTERP_LABEL[settings.interp]} • ${out}`);
+  setText(document.getElementById('visRight')||document.getElementById('visRight2'), `◉ ${rate} • ${out.toUpperCase()}`);
+  setText(document.getElementById('engineRate'), `SAMPLERATE: ${player ? `${player.context.sampleRate}Hz` : '—'}`);
+}
+
+function logLine(text){
+  if(!engineLog) return;
+  engineLog.querySelector('.pending')?.remove();
+  const line=document.createElement('div');
+  const mark=document.createElement('b');
+  mark.textContent='> ';
+  line.append(mark, text);
+  engineLog.append(line);
+  while(engineLog.children.length>7) engineLog.firstElementChild.remove();
+}
+
+// --- offline ----------------------------------------------------------------------
+// The service worker sits with the engine at the root of the Pages site, so it
+// covers the engine's worker and wasm as well as this site. Whatever this page
+// loaded before it took over is handed to it to keep.
+async function keepForOffline(){
+  if(!('serviceWorker' in navigator)) return;
+  try{
+    await navigator.serviceWorker.register(`${ENGINE_BASE}/sw.js`, {scope:`${ENGINE_BASE}/`});
+    const reg=await navigator.serviceWorker.ready;
+    const urls=[location.href.split('#')[0], ...performance.getEntriesByType('resource').map(e=>e.name)];
+    reg.active?.postMessage({type:'cache', urls});
+  }catch(e){ console.warn('offline cache unavailable', e); }
+}
+
 // Audio settings: kept in the browser. The engine ones are pushed to the worker,
 // which applies them to the playing track right away and to every track opened
 // later; the DC filter lives in the page's own audio graph.
@@ -366,6 +504,7 @@ function applySettings(){
   player.setIntProperty(AYM_LAYOUT, settings.layout);
   player.setIntProperty(AYM_TYPE, settings.aymType);
   routeOutput();
+  updateEngineInfo();
 }
 
 // worklet → [DC blocker] → analyser → volume → speakers
@@ -421,11 +560,24 @@ async function addContent(name, bytes, extra){
   return first;
 }
 
+// Playlists among the files are read first; the other files may be what they list.
 async function handleFiles(files){
   await booting;
   if(engineUnavailable()) return;
-  let first=-1;
+  const lists=[], others=[];
   for(const f of files){
+    const head=new Uint8Array(await f.slice(0, 512).arrayBuffer());
+    (looksLikeXspf(f.name, head) ? lists : others).push(f);
+  }
+  const companions=new Map(others.map(f=>[f.name.toLowerCase(), f]));
+  const used=new Set();
+  let first=-1;
+  for(const f of lists){
+    const at=await importXspf(f.name, await f.text(), null, companions, used);
+    if(first<0) first=at;
+  }
+  for(const f of others){
+    if(used.has(f)) continue;
     const at=await addContent(f.name, new Uint8Array(await f.arrayBuffer()), {source:'file'});
     if(first<0) first=at;
   }
@@ -483,6 +635,7 @@ async function addFromUrl(input){
   let bytes;
   try{ bytes=await fetchBytes(url.href); }
   catch(e){ toast(`${nameFromUrl(url)}: ${e.message}`, '⚠️'); return -1; }
+  if(looksLikeXspf(url.pathname, bytes)) return importXspf(nameFromUrl(url), new TextDecoder().decode(bytes), url.href, new Map(), new Set());
   return addContent(nameFromUrl(url), bytes, {source:'url', url:url.href, icon:'🌐', chip:'URL'});
 }
 
@@ -529,20 +682,108 @@ window.openUrlDialog=()=>{
   urlDialog.querySelector('input').select();
 };
 
+// --- XSPF import --------------------------------------------------------------
+// Reads what exportXspf writes, and what zxtune-qt writes. A location is either
+// a URL, whose subpath follows '#' (ZXTune's network provider), or a file path,
+// whose subpath follows '?' (its file provider). A web page cannot open a file
+// by path, so files are looked up by name among those picked with the playlist.
+const XSPF_NS='http://xspf.org/ns/0/';
+
+function looksLikeXspf(name, head){
+  if(/\.xspf$/i.test(name)) return true;
+  const text=new TextDecoder().decode(head.subarray(0, 512));
+  return text.includes('<playlist') && text.includes(XSPF_NS);
+}
+
+function decodeSafe(s){
+  try{ return decodeURIComponent(s); }catch{ return s; }
+}
+
+// base: where the playlist itself came from, for relative locations
+function parseLocation(loc, base){
+  loc=loc.trim();
+  if(/^https?:\/\//i.test(loc)){
+    const at=loc.indexOf('#');
+    return {url: at<0 ? loc : loc.slice(0, at), subpath: at<0 ? '' : decodeSafe(loc.slice(at+1))};
+  }
+  const at=loc.indexOf('?');
+  const path=at<0 ? loc : loc.slice(0, at);
+  const subpath=at<0 ? '' : decodeSafe(loc.slice(at+1));
+  if(base && /^https?:/i.test(base)) return {url:new URL(path, base).href, subpath};
+  const plain=decodeSafe(path.replace(/^file:\/\/\/?/i, ''));
+  return {name:plain.split(/[\\/]/).pop(), subpath};
+}
+
+// One fetch and one detection per file, however many of its subsongs are listed.
+async function loadXspfSource(item, companions, used){
+  let bytes, extra;
+  if(item.url){
+    bytes=await fetchBytes(item.url);
+    const url=new URL(item.url);
+    const sample=SAMPLES.find(s=>new URL(`${ENGINE_BASE}/tunes/${s.file}`).href===url.href);
+    extra= sample ? {...sample, source:'sample', local:true}
+      : {file:nameFromUrl(url), source:'url', url:url.href, icon:'🌐', chip:'URL', local:true};
+  } else {
+    const file=companions.get(item.name.toLowerCase());
+    if(!file) return null;
+    used.add(file);
+    bytes=new Uint8Array(await file.arrayBuffer());
+    extra={file:file.name, source:'file', icon:'📄', chip:'Local', local:true};
+  }
+  const found=await player.detect(bytes);
+  return found.length ? {bytes, found, extra} : null;
+}
+
+// Resolves the index of the first new entry, or -1.
+async function importXspf(name, text, base, companions, used){
+  const doc=new DOMParser().parseFromString(text, 'application/xml');
+  if(doc.getElementsByTagName('parsererror').length){ toast(`${name}: XSPF として読めませんでした`, '⚠️'); return -1; }
+  const items=[];
+  for(const track of doc.getElementsByTagNameNS(XSPF_NS, 'track')){
+    const loc=track.getElementsByTagNameNS(XSPF_NS, 'location')[0]?.textContent;
+    if(!loc) continue;
+    try{ items.push(parseLocation(loc, base)); }catch{}
+  }
+  if(!items.length){ toast(`${name}: 曲が入っていません`, '⚠️'); return -1; }
+  const first=tracks.length;
+  const sources=new Map();
+  let missing=0, failed=0;
+  for(const item of items){
+    const key=item.url ?? `file:${item.name.toLowerCase()}`;
+    if(!sources.has(key)){
+      try{ sources.set(key, await loadXspfSource(item, companions, used)); }
+      catch(e){ console.warn(key, e); sources.set(key, null); }
+    }
+    const src=sources.get(key);
+    if(!src){ item.url ? failed++ : missing++; continue; }
+    const meta=src.found.find(m=>m.subpath===item.subpath) ?? (item.subpath ? null : src.found[0]);
+    if(!meta){ failed++; continue; }
+    tracks.push(entryFrom(meta, {...src.extra, bytes:src.bytes}));
+  }
+  const added=tracks.length-first;
+  const notes=[];
+  if(missing) notes.push(`ローカルファイル${missing}曲は、プレイリストと一緒に選ぶと読み込めます`);
+  if(failed) notes.push(`${failed}曲は読めませんでした`);
+  toast(`${name}: ${added}曲を読み込み${notes.length ? ` (${notes.join(' / ')})` : ''}`, added ? '📃' : '⚠️');
+  return added ? first : -1;
+}
+
 // --- XSPF export --------------------------------------------------------------
 // Written the way zxtune-qt writes it (playlist version 1: text fields
-// percent-encoded, "location?subpath"), so the desktop and Android players can
-// read it back. Local files can only be named, not located.
+// percent-encoded; a subpath after '#' for URLs and after '?' for files), so the
+// desktop and Android players can read it back. Local files can only be named.
 function xmlText(s){
   return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 }
 const pct=s=>encodeURIComponent(s);
 
 function trackLocation(t){
-  const base= t.source==='url' ? t.url
-    : t.source==='sample' ? new URL(`${ENGINE_BASE}/tunes/${t.file}`).href
-    : encodeURI(t.file);
-  return t.subpath ? `${base}?${t.subpath}` : base;
+  if(t.source==='url' || t.source==='sample'){
+    const url= t.source==='url' ? t.url : new URL(`${ENGINE_BASE}/tunes/${t.file}`).href;
+    return t.subpath ? `${url}#${encodeURIComponent(t.subpath)}` : url;
+  }
+  const name=encodeURI(t.file).replace(/\?/g, '%3F').replace(/#/g, '%23');
+  return t.subpath ? `${name}?${t.subpath}` : name;
 }
 
 function xspfExtension(props, indent){
@@ -616,7 +857,8 @@ window.clearPlaylist=()=>{
     const r=canvas.getBoundingClientRect();
     canvas.width=r.width*DPR; canvas.height=r.height*DPR;
   }
-  window.addEventListener('resize', resize);
+  if(window.ResizeObserver) new ResizeObserver(resize).observe(canvas);
+  else window.addEventListener('resize', resize);
   resize();
   const dataArray = new Uint8Array(256);
   let mode=0; //0 spectrum,1 waveform
@@ -714,8 +956,10 @@ async function fetchSample(file){
 }
 
 async function boot(){
+  const bootStarted=performance.now();
   bindControls();
   bindSettings();
+  bindMediaSession();
   setText(els.title, 'エンジンを読み込み中…');
   try{
     const { ZXTunePlayer } = await import(`${ENGINE_BASE}/player.mjs`);
@@ -733,11 +977,19 @@ async function boot(){
   analyser.disconnect();
   gain=ctx.createGain();
   analyser.connect(gain);
-  gain.connect(ctx.destination);
+  connectSpeakers(ctx);
   bindControls.applyVol();
   applySettings();
-  player.onposition=ms=>{ if(opened===current){ posMs=ms; updateProgress(); } };
+  player.onposition=ms=>{
+    if(opened!==current) return;
+    posMs=ms; updateProgress();
+    if(performance.now()-lastPositionReport>1000) updatePositionState();
+  };
   player.onended=onEnded;
+  player.onload=({ ms, budgetMs })=>{
+    setText(document.getElementById('engineLoad'), `RENDER: ${ms.toFixed(2)}ms / ${budgetMs.toFixed(0)}ms (${Math.min(100, ms/budgetMs*100).toFixed(0)}%)`);
+  };
+  logLine(`AudioWorklet @ ${ctx.sampleRate}Hz${mediaOut ? ' → <audio> (media keys)' : ''}`);
 
   // fetches overlap; detection is one at a time, since the worker's replies carry no id
   const fetched=SAMPLES.map(s=>fetchSample(s.file).catch(e=>e));
@@ -747,6 +999,12 @@ async function boot(){
       const bytes=await fetched[i];
       if(bytes instanceof Error) throw bytes;
       const [meta]=await player.detect(bytes);
+      if(i===0){
+        // the first answer from the worker is when its wasm is up
+        const took=(performance.now()-bootStarted)/1000;
+        setText(document.getElementById('statBoot'), `${took.toFixed(1)}s`);
+        logLine(`zxtune.wasm ready in ${took.toFixed(2)}s`);
+      }
       if(meta) loaded.push(entryFrom(meta, {...s, bytes, source:'sample'}));
     }catch(e){
       console.warn(s.file, e);
@@ -758,6 +1016,8 @@ async function boot(){
   const shared=new URLSearchParams(location.search).get('url');
   const at= shared ? await addFromUrl(shared) : -1;
   renderPlaylist();
+  logLine(`${loaded.length} sample tunes detected`);
+  keepForOffline();
   if(!tracks.length){ setText(els.title, 'サンプル曲を読み込めませんでした'); return; }
   selectTrack(Math.max(0, at), false);
 }
