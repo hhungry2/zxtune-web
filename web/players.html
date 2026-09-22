@@ -5,7 +5,7 @@
 <script src="js/theme.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>プレイヤー — ZXTune / Chiptune Web Player</title>
-<meta name="description" content="ZXTuneの4つのプレイヤー — Web (ブラウザ) / QT (デスクトップ) / Android (モバイル) / zxtune123 (CLI) を徹底比較。機能、対応フォーマット、使い方を解説。">
+<meta name="description" content="ZXTuneの4つのプレイヤー — Web (ブラウザ) / Qt (デスクトップ) / Android (モバイル) / zxtune123 (CLI) を徹底比較。機能、対応フォーマット、使い方を解説。">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2300FFD1'/><text x='16' y='22' text-anchor='middle' font-family='monospace' font-weight='800' font-size='18' fill='%23071118'>Z</text></svg>">
 <link rel="stylesheet" href="css/style.css">
 <link rel="manifest" href="manifest.json">
@@ -24,7 +24,7 @@
 <div class="container" style="padding:28px 0 8px">
   <div class="kicker">Players Guide — 1 core, 4 experiences</div>
   <h1 style="margin:10px 0 8px;font-size:clamp(28px,4vw,42px);letter-spacing:-.03em;line-height:.95">どの端末でも、<span style="background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent">同じ音</span>を。</h1>
-  <p style="color:var(--muted);max-width:800px;margin:0;font-size:15px;line-height:1.7">ZXTuneはコア(C++)を共有し、UIだけを各プラットフォームに最適化。デスクトップのフル機能、スマホの手軽さ、ブラウザの即時性、CLIの自動化 — すべて同じ高精度エミュレーションで鳴ります。</p>
+  <p style="color:var(--muted);max-width:800px;margin:0;font-size:15px;line-height:1.7">ZXTuneはコア(C++)を共有し、UIだけを各プラットフォームに最適化。デスクトップのフル機能、スマホの手軽さ、ブラウザの即時性、CLIの自動化 — どれも同じコアで鳴ります。</p>
 </div>
 
 <div class="container" style="margin-top:20px;display:grid;gap:16px">
@@ -58,14 +58,14 @@
       </div>
       <div class="detail-side">
         <div class="info-box"><h4>クイックスタート</h4>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(var(--shade),calc(.3 * var(--shade-k)));border:1px solid var(--border);border-radius:8px;padding:10px;line-height:1.6">
-            $ open <b style="color:var(--cyan)">player.html</b><br>
-            # drag & drop <b style="color:var(--cyan)">demo.pt3</b><br>
-            ▶ now playing
-          </div>
+          <ol style="margin:0;padding-left:18px;display:grid;gap:4px;font-size:13px;color:var(--muted)">
+            <li>Webプレイヤーを開く</li>
+            <li>同梱の9曲から選ぶか、曲ファイルをドロップ</li>
+            <li><code>▶</code> で再生</li>
+          </ol>
           <a class="btn btn-primary" href="player.html" style="width:100%;margin-top:10px;justify-content:center">Webプレイヤーを開く</a>
         </div>
-        <div class="info-box"><h4>ショートカット</h4><dl><dt>Space</dt><dd>再生 / 停止</dd><dt>← / →</dt><dd>5秒シーク</dd><dt>M</dt><dd>CH A ミュート</dd><dt>L</dt><dd>ループ切替</dd><dt>N / P</dt><dd>次 / 前</dd></dl></div>
+        <div class="info-box"><h4>ショートカット</h4><dl><dt>Space</dt><dd>再生 / 停止</dd><dt>← / →</dt><dd>5秒シーク</dd><dt>M</dt><dd>CH A ミュート</dd><dt>L</dt><dd>ループ切替</dd><dt>N / P</dt><dd>次 / 前</dd><dt>S</dt><dd>スペクトラム / 波形</dd></dl></div>
       </div>
     </div>
   </div>
@@ -74,25 +74,25 @@
   <div class="detail-hero">
     <div class="detail-head">
       <div class="detail-icon" style="background:linear-gradient(135deg, rgba(var(--violet-rgb),.18), rgba(var(--cyan-rgb),.12))">🖥️</div>
-      <div class="detail-title"><h1>ZXTune QT <span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:999px;background:rgba(var(--violet-rgb),.14);border:1px solid rgba(var(--violet-rgb),.22);color:var(--violet-text)">DESKTOP • Qt5/6</span></h1><p>Windows / Linux / macOS • 最も高機能 • プラグイン拡張</p></div>
-      <div class="detail-stats"><span><b>Qt</b>フレームワーク</span><span><b>変換</b>対応</span><span><b>OG</b>サポート</span></div>
+      <div class="detail-title"><h1>ZXTune Qt <span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:999px;background:rgba(var(--violet-rgb),.14);border:1px solid rgba(var(--violet-rgb),.22);color:var(--violet-text)">DESKTOP • Qt 5</span></h1><p>Windows / macOS / Linux • いちばん多機能なプレイヤー</p></div>
+      <div class="detail-stats"><span><b>Qt 5</b>UI</span><span><b>WAV・MP3・OGG・FLAC</b>に変換</span><span><b>XSPF・AYL</b>プレイリスト</span></div>
     </div>
     <div class="detail-body">
       <div class="detail-prose">
-        <p><b>パワーユーザー向けのフラッグシップ。</b> プレイリストの高度な管理、検索、タグ編集、オーディオ変換、コンポーネント設定までを一つのウィンドウで。</p>
+        <p><b>パワーユーザー向けのフラッグシップ。</b> プレイリストの管理と検索、曲ごとのプロパティ編集、音声ファイルへの変換、音源ごとの細かな設定までを一つのウィンドウで。</p>
         <h3>主な機能</h3>
         <ul>
-          <li><b>プレイリスト</b> — 検索 / フィルタ / ソート / XSPF保存 / AYLインポート</li>
-          <li><b>変換</b> — 一括でWAV/MP3/OGGへエクスポート（サンプリング周波数・補間選択可）</li>
-          <li><b>オーディオ設定</b> — AYMチューニング(ABC/ACB…)、補間、ステレオセパレーション、ローパス</li>
-          <li><b>プラグイン</b> — 新フォーマットや出力デバイスを追加可能</li>
+          <li><b>プレイリスト</b> — 検索 (正規表現も可) / 並べ替え / 重複の削除 / 統計 / XSPF 保存 (絶対・相対パス、曲データ埋め込み) / XSPF・AYL 読み込み</li>
+          <li><b>プロパティ</b> — 曲ごとにタイトル・作者・コメントや、チップの種類・クロック・補間・レイアウトを設定</li>
+          <li><b>変換</b> — 選んだ曲を WAV / MP3 / OGG / FLAC に一括変換 (マルチスレッド可)</li>
+          <li><b>設定</b> — AY、SAA、SID、Z80、ミキサー、出力デバイス、形式ごとのオプション</li>
         </ul>
         <h3>インストール</h3>
-        <p><code>https://zxtune.ru</code> からバイナリを取得、または <code>make -C apps/zxtune-qt</code> でビルド。依存はQt5/6とzlibのみ。</p>
+        <p>公式サイト (<code>zxtune.ru</code> → <code>zxtune.bitbucket.io</code>) で Windows (x86_64 / ARM64)、macOS (Intel / Apple Silicon)、Linux (tar.gz / deb / rpm) 版が配布されています。ソースからは、Linux でシステムの boost と Qt を使うなら <code>make system.zlib=1 -C apps/zxtune-qt</code> でビルドします (<code>BUILD.md</code>)。</p>
       </div>
       <div class="detail-side">
-        <div class="info-box"><h4>入手方法</h4><dl><dt>公式</dt><dd><a href="https://zxtune.ru" target="_blank" style="color:var(--cyan)">zxtune.ru</a></dd><dt>ソース</dt><dd><a href="https://github.com/vitamin-caig/zxtune" target="_blank" style="color:var(--cyan)">GitHub</a></dd><dt>対応OS</dt><dd>Windows 7+ / Linux / macOS</dd><dt>ライセンス</dt><dd>LGPL-3.0</dd></dl><a class="btn btn-ghost" href="https://github.com/vitamin-caig/zxtune" target="_blank" style="width:100%;justify-content:center;margin-top:10px">GitHubで見る</a></div>
-        <div class="try-box"><h4>💡 Tip</h4><p>TRD/SCL内の全曲をプレイリストに一括追加 → 検索で絞り込み → 一括変換でMP3化、が定番ワークフロー。</p></div>
+        <div class="info-box"><h4>入手方法</h4><dl><dt>公式</dt><dd><a href="https://zxtune.ru" target="_blank" style="color:var(--cyan)">zxtune.ru</a></dd><dt>ソース</dt><dd><a href="https://github.com/vitamin-caig/zxtune" target="_blank" style="color:var(--cyan)">GitHub</a></dd><dt>公式の配布</dt><dd>Windows / macOS / Linux (Haiku 版は HaikuDepot)</dd><dt>ライセンス</dt><dd>LGPL-3.0</dd></dl><a class="btn btn-ghost" href="https://github.com/vitamin-caig/zxtune" target="_blank" style="width:100%;justify-content:center;margin-top:10px">GitHubで見る</a></div>
+        <div class="try-box"><h4>💡 Tip</h4><p>TRD / SCL をプレイリストに追加すると中の曲がまとめて並びます。検索で絞り込んで選び、「変換」で MP3 などに書き出せます。</p></div>
       </div>
     </div>
   </div>
@@ -102,24 +102,30 @@
     <div class="detail-head">
       <div class="detail-icon" style="background:linear-gradient(135deg, rgba(var(--green-rgb),.18), rgba(var(--cyan-rgb),.12))">📱</div>
       <div class="detail-title"><h1>ZXTune Android <span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:999px;background:rgba(var(--green-rgb),.14);border:1px solid rgba(var(--green-rgb),.22);color:var(--green-text)">MOBILE • 100K+ DL (Google Play)</span></h1><p>Android 4.1+ • オンラインカタログ統合 • ウィジェット / 着信音</p></div>
-      <div class="detail-stats"><span><b>11+</b>カタログ</span><span><b>xxhdpi</b>対応</span><span><b>4.1+</b>Android</span></div>
+      <div class="detail-stats"><span><b>14</b>カタログ</span><span><b>スマホ / タブレット</b>共通</span><span><b>4.1+</b>Android</span></div>
     </div>
     <div class="detail-body">
       <div class="detail-prose">
         <p><b>ポケットの中のチップチューン図書館。</b> ローカルファイルに加え、zxtunes.com / ModLand / HVSC / modarchive 等のオンラインカタログを直接ブラウズ・再生・キャッシュ。</p>
         <h3>モバイルならでは</h3>
         <ul>
-          <li><b>カタログ</b> — zxtunes.com, zxart.ee, HVSC, ModArchive, Atari SAP, VGMRips, Scene.org…</li>
+          <li><b>カタログ</b> — zxtunes.com, ModLand, HVSC, zxart.ee, Josh W, AMP, AYGOR, ModArchive, ASMA (Atari SAP), Aminet, VGMRips, scene.org, OverClocked ReMix, khinsider の14件</li>
           <li><b>ラジオ</b> — ランダム再生とコンピレーション</li>
           <li><b>ウィジェット</b> — ホーム画面から操作</li>
-          <li><b>着信音</b> — お気に入りをワンタップで設定</li>
-          <li><b>ヘッドセット</b> — ボタンで操作、着信時自動ポーズ</li>
+          <li><b>着信音</b> — 曲をそのまま着信音に設定</li>
+          <li><b>ヘッドセット</b> — ボタンで操作 (機種によっては非対応)。通話中は自動で一時停止</li>
+          <li><b>キャッシュ</b> — プレイリストの曲を SD カードにキャッシュ</li>
         </ul>
-        <h3>スクリーンショット（公式より）</h3>
-        <p>Now Playingの大きなカバー＋スペクトラム、プレイリストの統計(111曲 5:04:18)、ブラウザのカタログ一覧 — タブレットにも最適化。</p>
+        <h3>スクリーンショット (公式)</h3>
+        <div class="shots">
+          <figure><img src="img/android-now-playing.webp" width="360" height="610" loading="lazy" alt="再生画面。大きなカバー画像にスペクトラムが重なり、下に再生位置と操作ボタンがある"><figcaption>再生画面</figcaption></figure>
+          <figure><img src="img/android-playlist-stats.webp" width="360" height="610" loading="lazy" alt="プレイリスト画面。統計のダイアログに 111 曲、合計 5:04:18 と表示されている"><figcaption>プレイリストの統計</figcaption></figure>
+          <figure><img src="img/android-catalogs.webp" width="360" height="610" loading="lazy" alt="ブラウザ画面のオンラインカタログ一覧。各アーカイブのロゴ、名前、URL が並ぶ"><figcaption>オンラインカタログ</figcaption></figure>
+        </div>
+        <p class="shots-note">リポジトリの <code>apps/zxtune-android/fastlane</code> にある公式スクリーンショットです。</p>
       </div>
       <div class="detail-side">
-        <div class="info-box"><h4>ダウンロード</h4><dl><dt>Google Play</dt><dd><a href="https://play.google.com/store/apps/details?id=app.zxtune" target="_blank" style="color:var(--cyan)">app.zxtune</a></dd><dt>RuStore</dt><dd><a href="https://www.rustore.ru/catalog/app/app.zxtune" target="_blank" style="color:var(--cyan)">RuStore</a></dd><dt>IzzyOnDroid</dt><dd><a href="https://apt.izzysoft.de/packages/app.zxtune.fdroid" target="_blank" style="color:var(--cyan)">F-Droid互換</a></dd><dt>要件</dt><dd>Android 4.1 (API16) +</dd></dl><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px"><a class="btn btn-primary" href="https://play.google.com/store/apps/details?id=app.zxtune" target="_blank" style="justify-content:center">Google Play</a><a class="btn btn-ghost" href="https://apt.izzysoft.de/packages/app.zxtune.fdroid" target="_blank" style="justify-content:center">F-Droid</a></div></div>
+        <div class="info-box"><h4>ダウンロード</h4><dl><dt>Google Play</dt><dd><a href="https://play.google.com/store/apps/details?id=app.zxtune" target="_blank" style="color:var(--cyan)">app.zxtune</a></dd><dt>RuStore</dt><dd><a href="https://www.rustore.ru/catalog/app/app.zxtune" target="_blank" style="color:var(--cyan)">RuStore</a></dd><dt>IzzyOnDroid</dt><dd><a href="https://apt.izzysoft.de/packages/app.zxtune.fdroid" target="_blank" style="color:var(--cyan)">F-Droid 互換リポジトリ</a></dd><dt>要件</dt><dd>Android 4.1 (API16) +</dd></dl><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px"><a class="btn btn-primary" href="https://play.google.com/store/apps/details?id=app.zxtune" target="_blank" style="justify-content:center">Google Play</a><a class="btn btn-ghost" href="https://apt.izzysoft.de/packages/app.zxtune.fdroid" target="_blank" style="justify-content:center">IzzyOnDroid</a></div></div>
       </div>
     </div>
   </div>
@@ -129,7 +135,7 @@
     <div class="detail-head">
       <div class="detail-icon" style="background:linear-gradient(135deg, rgba(var(--yellow-rgb),.18), rgba(var(--magenta-rgb),.12))">⌘</div>
       <div class="detail-title"><h1>zxtune123 <span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:999px;background:rgba(var(--yellow-rgb),.18);border:1px solid rgba(var(--yellow-rgb),.28);color:var(--yellow)">CLI • Headless</span></h1><p>コンソール / スクリプト / サーバ • 軽量 • バッチ変換</p></div>
-      <div class="detail-stats"><span><b>make</b>ビルド</span><span><b>pipe</b>対応</span><span><b>bench</b>内蔵</span></div>
+      <div class="detail-stats"><span><b>--analyzer</b>スペクトラム</span><span><b>--convert</b>形式変換</span><span><b>--benchmark</b>速度計測</span></div>
     </div>
     <div class="detail-body">
       <div class="detail-prose">
@@ -137,16 +143,23 @@
         <h3>使用例</h3>
         <div style="font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:12px;line-height:1.7">
           $ zxtune123 --help<br>
-          $ zxtune123 track.pt3 <span style="color:var(--muted)"># 再生</span><br>
-          $ zxtune123 --info track.spc <span style="color:var(--muted)"># メタ情報</span><br>
-          $ zxtune123 --convert --mp3 *.pt3 <span style="color:var(--muted)"># 一括MP3</span><br>
-          $ make -C apps/zxtune123 system.zlib=1 <span style="color:var(--muted)"># ビルド</span>
+          $ zxtune123 track.pt3 <span style="color:var(--muted)"># 再生 (← / → でシーク)</span><br>
+          $ zxtune123 --analyzer track.pt3 <span style="color:var(--muted)"># スペクトラムを表示して再生</span><br>
+          $ zxtune123 --wav filename=[Author]-[Title].wav *.pt3 <span style="color:var(--muted)"># WAV に書き出し</span><br>
+          $ zxtune123 --convert mode=psg,filename=[Title].psg track.pt3 <span style="color:var(--muted)"># PSG に変換</span><br>
+          $ zxtune123 --list-plugins <span style="color:var(--muted)"># 対応形式の一覧</span>
         </div>
         <h3>特徴</h3>
-        <ul><li>依存最小 — C++とzlibのみ</li><li>stdoutパイプ / スクリプト連携</li><li>ベンチマークモードで最適な補間を探索</li></ul>
+        <ul>
+          <li><b>書き出し</b> — <code>--wav</code> などの出力先にファイル名のひな形 (<code>[Author]</code>、<code>[Title]</code> など) を指定</li>
+          <li><b>形式変換</b> — <code>--convert</code> で raw / PSG / ZX50 / TXT / AY ダンプ / FYM に変換</li>
+          <li><b>一覧化</b> — <code>--index</code> で曲の情報を CSV に書き出し</li>
+          <li><b>ベンチマーク</b> — <code>--benchmark</code> で描画の速さを計測</li>
+          <li><b>設定</b> — <code>--core-options</code> などの指定を設定ファイル (<code>--config</code>) にまとめられます</li>
+        </ul>
       </div>
       <div class="detail-side">
-        <div class="info-box"><h4>ビルド</h4><dl><dt>パス</dt><dd><code>apps/zxtune123</code></dd><dt>コマンド</dt><dd><code>make system.zlib=1</code></dd><dt>出力</dt><dd><code>bin/zxtune123</code></dd><dt>ヘルプ</dt><dd><code>zxtune123 --help</code></dd></dl><a class="btn btn-ghost" href="https://github.com/vitamin-caig/zxtune/tree/develop/apps/zxtune123" target="_blank" style="width:100%;justify-content:center;margin-top:10px">ソースを見る</a></div>
+        <div class="info-box"><h4>ビルド</h4><dl><dt>パス</dt><dd><code>apps/zxtune123</code></dd><dt>コマンド</dt><dd><code>make system.zlib=1</code> (Linux、システムの boost を使う場合)</dd><dt>出力</dt><dd><code>bin/</code> 以下 (ビルド設定ごとのフォルダ)</dd><dt>ヘルプ</dt><dd><code>zxtune123 --help</code></dd></dl><a class="btn btn-ghost" href="https://github.com/vitamin-caig/zxtune/tree/develop/apps/zxtune123" target="_blank" style="width:100%;justify-content:center;margin-top:10px">ソースを見る</a></div>
       </div>
     </div>
   </div>
@@ -160,15 +173,15 @@
     <div style="overflow:auto">
       <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:640px">
         <thead style="background:rgba(var(--ink),.04);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">
-          <tr><th style="padding:10px 12px;text-align:left">機能</th><th style="padding:10px 12px">Web</th><th style="padding:10px 12px">QT</th><th style="padding:10px 12px">Android</th><th style="padding:10px 12px">CLI</th></tr>
+          <tr><th style="padding:10px 12px;text-align:left">機能</th><th style="padding:10px 12px">Web</th><th style="padding:10px 12px">Qt</th><th style="padding:10px 12px">Android</th><th style="padding:10px 12px">CLI</th></tr>
         </thead>
         <tbody style="color:var(--muted)">
           <tr style="border-top:1px solid var(--border)"><td style="padding:10px 12px;color:var(--text)">対応フォーマット</td><td style="padding:10px 12px;text-align:center">382 プラグイン</td><td style="padding:10px 12px;text-align:center">同じコア<br><small>(ビルドにより差あり)</small></td><td style="padding:10px 12px;text-align:center">同じコア<br><small>(ビルドにより差あり)</small></td><td style="padding:10px 12px;text-align:center">同じコア<br><small>(ビルドにより差あり)</small></td></tr>
           <tr style="border-top:1px solid rgba(var(--ink),.04)"><td style="padding:10px 12px;color:var(--text)">プレイリスト</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">◎ 高機能</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">—</td></tr>
           <tr style="border-top:1px solid rgba(var(--ink),.04)"><td style="padding:10px 12px;color:var(--text)">ZIP/TRD自動展開</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">○</td></tr>
-          <tr style="border-top:1px solid rgba(var(--ink),.04)"><td style="padding:10px 12px;color:var(--text)">変換 (WAV/MP3)</td><td style="padding:10px 12px;text-align:center">—</td><td style="padding:10px 12px;text-align:center">◎</td><td style="padding:10px 12px;text-align:center">—</td><td style="padding:10px 12px;text-align:center">○</td></tr>
-          <tr style="border-top:1px solid rgba(var(--ink),.04)"><td style="padding:10px 12px;color:var(--text)">オンラインカタログ</td><td style="padding:10px 12px;text-align:center">△ (URL読み込み)</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">◎</td><td style="padding:10px 12px;text-align:center">—</td></tr>
-          <tr style="border-top:1px solid rgba(var(--ink),.04)"><td style="padding:10px 12px;color:var(--text)">可視化</td><td style="padding:10px 12px;text-align:center">Spectrum+Scope</td><td style="padding:10px 12px;text-align:center">Spectrum</td><td style="padding:10px 12px;text-align:center">Spectrum</td><td style="padding:10px 12px;text-align:center">—</td></tr>
+          <tr style="border-top:1px solid rgba(var(--ink),.04)"><td style="padding:10px 12px;color:var(--text)">音声ファイルへの書き出し</td><td style="padding:10px 12px;text-align:center">—</td><td style="padding:10px 12px;text-align:center">◎</td><td style="padding:10px 12px;text-align:center">—</td><td style="padding:10px 12px;text-align:center">○</td></tr>
+          <tr style="border-top:1px solid rgba(var(--ink),.04)"><td style="padding:10px 12px;color:var(--text)">オンラインカタログ</td><td style="padding:10px 12px;text-align:center">△ (URL読み込み)</td><td style="padding:10px 12px;text-align:center">—</td><td style="padding:10px 12px;text-align:center">◎ (14件)</td><td style="padding:10px 12px;text-align:center">—</td></tr>
+          <tr style="border-top:1px solid rgba(var(--ink),.04)"><td style="padding:10px 12px;color:var(--text)">可視化</td><td style="padding:10px 12px;text-align:center">Spectrum+Scope</td><td style="padding:10px 12px;text-align:center">Spectrum</td><td style="padding:10px 12px;text-align:center">Spectrum</td><td style="padding:10px 12px;text-align:center">Spectrum<br><small>(--analyzer)</small></td></tr>
           <tr style="border-top:1px solid rgba(var(--ink),.04)"><td style="padding:10px 12px;color:var(--text)">インストール</td><td style="padding:10px 12px;text-align:center">不要</td><td style="padding:10px 12px;text-align:center">要</td><td style="padding:10px 12px;text-align:center">要</td><td style="padding:10px 12px;text-align:center">要</td></tr>
         </tbody>
       </table>

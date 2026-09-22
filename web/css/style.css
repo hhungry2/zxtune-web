@@ -640,3 +640,10 @@ img{max-width:100%}
   .tile-grid{grid-template-columns:1fr}
   .plugins-table td:last-child{white-space:normal}
 }
+
+/* official screenshots (players.html) */
+.shots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.shots figure{margin:0}
+.shots img{width:100%;height:auto;border-radius:10px;border:1px solid var(--border);display:block;background:var(--bg-card)}
+.shots figcaption{font-size:11px;color:var(--muted);margin-top:4px;text-align:center}
+.shots-note{font-size:11px;color:var(--dim)}

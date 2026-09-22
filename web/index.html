@@ -223,12 +223,12 @@
       <div class="player-card">
         <div class="player-card-top qt"><div class="player-card-icon">🖥️</div></div>
         <div class="player-card-body">
-          <h3>ZXTune QT <span>DESKTOP</span></h3>
+          <h3>ZXTune Qt <span>DESKTOP</span></h3>
           <p>Windows / Linux / macOS。最も高機能なデスクトップ版。</p>
           <ul class="player-card-list">
             <li>プレイリスト / 検索 / 変換</li>
-            <li>AYM / DAC / FM 設定</li>
-            <li>コンポーネント / プラグイン</li>
+            <li>AY / SAA / SID / Z80 の設定</li>
+            <li>XSPF / AYL プレイリスト</li>
           </ul>
         </div>
         <div class="player-card-foot"><a class="primary" href="https://zxtune.ru" target="_blank">ダウンロード</a><a href="players.html">詳しく</a></div>
@@ -237,14 +237,14 @@
         <div class="player-card-top android"><div class="player-card-icon">📱</div></div>
         <div class="player-card-body">
           <h3>ZXTune Android <span>MOBILE</span></h3>
-          <p>5万DL超。ローカル + オンラインカタログ + ラジオ。</p>
+          <p>Google Play で10万DL超。ローカル + オンラインカタログ + ラジオ。</p>
           <ul class="player-card-list">
             <li>zxtunes.com / modarchive / HVSC 統合</li>
             <li>ウィジェット / 着信音設定</li>
             <li>ヘッドセット / 通話時ポーズ</li>
           </ul>
         </div>
-        <div class="player-card-foot"><a class="primary" href="https://play.google.com/store/apps/details?id=app.zxtune" target="_blank">Google Play</a><a href="https://apt.izzysoft.de/packages/app.zxtune.fdroid" target="_blank">F-Droid</a></div>
+        <div class="player-card-foot"><a class="primary" href="https://play.google.com/store/apps/details?id=app.zxtune" target="_blank">Google Play</a><a href="https://apt.izzysoft.de/packages/app.zxtune.fdroid" target="_blank">IzzyOnDroid</a></div>
       </div>
       <div class="player-card">
         <div class="player-card-top cli"><div class="player-card-icon">⌘</div></div>
@@ -253,7 +253,7 @@
           <p>端末で完結。スクリプトや変換バッチに最適。</p>
           <ul class="player-card-list">
             <li>軽量 / ヘッドレス</li>
-            <li>WAV/MP3 変換 (ffmpeg連携)</li>
+            <li>WAV などへの書き出し / 形式変換</li>
             <li>情報表示 / ベンチマーク</li>
           </ul>
         </div>
@@ -263,8 +263,8 @@
 
     <div class="features-grid" style="margin-top:20px">
       <div class="feature"><div class="feature-icon">🎚️</div><h3>スタジオ品質の再生</h3><p>補間 (なし / 低品質 / 高品質)、ゲイン、フェードイン / アウト、無音検出。</p><ul><li>チャンネル別ミュート</li><li>A/B/C レイアウト & ミキサー</li><li>AY/YM チップ切替・クロック設定</li></ul></div>
-      <div class="feature"><div class="feature-icon">🔍</div><h3>強力なブラウズ</h3><p>アーカイブのネスト展開、プレイリスト検索、タグ編集、重複検出。</p><ul><li>ZIP/RAR/7z/TRD/SCL/FDI 内を透過再生</li><li>XSPF / AYL プレイリスト</li><li>オンラインカタログ統合 (zxtunes等)</li></ul></div>
-      <div class="feature"><div class="feature-icon">🧬</div><h3>オープン & 拡張可能</h3><p>コアはC++、UIは各プラットフォーム最適。プラグインで新フォーマット追加も容易。</p><ul><li>LGPL-3.0 • GitHub</li><li>WASM / Qt / Android / CLI</li><li>活発なコミュニティ & ドキュメント</li></ul></div>
+      <div class="feature"><div class="feature-icon">🔍</div><h3>強力なブラウズ</h3><p>アーカイブのネスト展開、プレイリストの検索・プロパティ編集・重複の削除 (Qt 版)。</p><ul><li>ZIP/RAR/7z/TRD/SCL/FDI 内を透過再生</li><li>XSPF / AYL プレイリスト</li><li>オンラインカタログ14件 (Android 版)</li></ul></div>
+      <div class="feature"><div class="feature-icon">🧬</div><h3>オープン & 拡張可能</h3><p>コアは C++、UI は各プラットフォーム向け。形式ごとのデコーダはコアに組み込まれています。</p><ul><li>LGPL-3.0 • GitHub / Bitbucket</li><li>WASM / Qt / Android / CLI</li><li>お知らせは Telegram / X / VK で</li></ul></div>
     </div>
   </div>
 </section>
@@ -282,7 +282,7 @@
     </div>
     <div class="formats-cats" id="catsPreview"></div>
     <div class="formats-grid" id="formatsPreview" style="margin-top:16px"></div>
-    <div style="text-align:center;margin-top:16px"><a class="btn btn-ghost" href="formats.html">さらに 90+ フォーマットを探索</a></div>
+    <div style="text-align:center;margin-top:16px"><a class="btn btn-ghost" href="formats.html#plugins">全 <span data-stat="total">382</span> プラグインを見る</a></div>
   </div>
 </section>
 
@@ -305,7 +305,7 @@
     <div class="footer-grid">
       <div class="footer-brand">
         <a class="brand" href="index.html"><div class="brand-mark"><span>Z</span></div><div><div class="brand-text"><b>ZX</b>Tune</div><div class="brand-sub">Chiptune Web Player</div></div></a>
-        <p>ZXTuneはオープンソースのクロスプラットフォーム・チップチューン・プレイヤーです。100以上のフォーマット、15基以上のチップを一つのコアで。</p>
+        <p>ZXTuneはオープンソースのクロスプラットフォーム・チップチューン・プレイヤーです。<span data-stat="modules">285</span> の曲の形式と <span data-stat="containers">97</span> のコンテナ (書庫・ディスクイメージなど) を一つのコアで。</p>
         <div class="social" style="margin-top:12px">
           <a href="https://github.com/vitamin-caig/zxtune" target="_blank" title="GitHub">GH</a>
           <a href="https://t.me/zxtune_official" target="_blank" title="Telegram">TG</a>
@@ -313,7 +313,7 @@
           <a href="https://zxtune.ru" target="_blank" title="Official">RU</a>
         </div>
       </div>
-      <div class="footer-links"><h4>プロダクト</h4><a href="player.html">Webプレイヤー</a><a href="players.html">デスクトップ (QT)</a><a href="https://play.google.com/store/apps/details?id=app.zxtune" target="_blank">Android</a><a href="https://github.com/vitamin-caig/zxtune" target="_blank">zxtune123 (CLI)</a></div>
+      <div class="footer-links"><h4>プロダクト</h4><a href="player.html">Webプレイヤー</a><a href="players.html">デスクトップ (Qt)</a><a href="https://play.google.com/store/apps/details?id=app.zxtune" target="_blank">Android</a><a href="https://github.com/vitamin-caig/zxtune" target="_blank">zxtune123 (CLI)</a></div>
       <div class="footer-links"><h4>フォーマット</h4><a href="formats.html#aym">AY/YM (ZX)</a><a href="formats.html#console">コンソール (SPC/NSF/SID)</a><a href="formats.html#fm">FM (TurboFM)</a><a href="formats.html#archived">アーカイブ / ディスク</a></div>
       <div class="footer-links"><h4>コミュニティ</h4><a href="https://zxtunes.com" target="_blank">zxtunes.com</a><a href="https://www.hvsc.c64.org" target="_blank">HVSC</a><a href="https://modarchive.org" target="_blank">ModArchive</a><a href="https://vgmrips.net" target="_blank">VGMRips</a></div>
     </div>
