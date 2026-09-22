@@ -1,20 +1,36 @@
-// ZXTune Web Player — functional mock with WebAudio + visualization
-const DEMO_TRACKS = [
-  {title:"Space Debris", artist:"J. Komputerman", format:"PT3 (VortexTracker II)", chip:"AY-3-8910 ×1", dur:222, ext:".pt3", icon:"🎹", color:"#00FFD1"},
-  {title:"Aftershock", artist:"MmcM / Soichi", format:"STC (Sound Tracker)", chip:"AY-3-8910", dur:184, ext:".stc", icon:"🎛️", color:"#7C5CFF"},
-  {title:"Lyra II", artist:"Shiru", format:"PT3 TurboSound", chip:"2×AY-3-8910 (6ch)", dur:256, ext:".pt3", icon:"🎹", color:"#00E5FF"},
-  {title:"Mystic Forest", artist:"n0rd", format:"SPC (SNES)", chip:"SPC700 + DSP", dur:148, ext:".spc", icon:"🎮", color:"#FF3B82"},
-  {title:"Journey to Silius — Title", artist:"Sunsoft", format:"NSF (NES)", chip:"2A03 + VRC6", dur:92, ext:".nsf", icon:"👾", color:"#FFD60A"},
-  {title:"Green Hill Zone", artist:"Masato Nakamura", format:"VGM (Genesis)", chip:"YM2612 + SN76489", dur:118, ext:".vgm", icon:"🌀", color:"#00FF88"},
-  {title:"Cybernoid II", artist:"Jeroen Tel", format:"SID (C64)", chip:"MOS6581", dur:204, ext:".sid", icon:"💾", color:"#FF8A00"},
-  {title:"Sundance", artist:"Factor6", format:"TFC (TurboFM)", chip:"YM2203 FM", dur:176, ext:".tfc", icon:"🎚️", color:"#FF3B82"},
+// ZXTune Web Player — the page side of the real wasm engine.
+//
+// The engine (player.mjs, zxtune.wasm, the worker and the worklet) is published
+// once at the root of the Pages site, and this site sits in a folder next to
+// it, so it is loaded from one level up. <html data-engine="..."> overrides that.
+// Made absolute against the page: import() would otherwise resolve it against
+// this script, while fetch, the worker and the worklet use the page.
+const ENGINE_BASE = new URL((document.documentElement.dataset.engine || '..') + '/', document.baseURI).href.replace(/\/$/, '');
+const CHANNELS_MASK = 'zxtune.core.channels_mask';
+
+// The sample set shipped with the engine: one tune per sound chip.
+const SAMPLES = [
+  {file:'Speccy2.pt3',          chip:'AY-3-8910', icon:'🎹'},
+  {file:'TOXIC2.stc',           chip:'AY-3-8910', icon:'🎛️'},
+  {file:'Kurztech.ym',          chip:'YM2149',    icon:'🎹'},
+  {file:'Love_Is_a_Shield.sid', chip:'MOS6581',   icon:'💾'},
+  {file:'knifus.nsf',           chip:'RP2A03',    icon:'👾'},
+  {file:'sos.gbs',              chip:'LR35902',   icon:'🕹️'},
+  {file:'ala-16.spc',           chip:'SPC700',    icon:'🎮'},
+  {file:'carillon.cop',         chip:'SAA1099',   icon:'🎚️'},
+  {file:'disco.tfe',            chip:'YM2203',    icon:'🌀'},
 ];
 
-let idx=0, playing=false, cur=0, raf=null, startAt=0, pausedAt=0;
-let audioCtx=null, master=null, analyser=null, oscillators=[];
+let tracks=[];            // {title, author, format, chip, icon, ext, durationMs, bytes, subpath, file, local}
+let current=null;         // the entry shown in the player
+let opened=null;          // the entry the engine has open
+let openToken=0;
+let player=null, gain=null, analyser=null;
+let playing=false, posMs=0;
 let chanMute=[false,false,false];
 let loopMode=0; //0 none,1 one,2 all
 let shuffle=false;
+let bootError=null;
 
 // elements — support both index and player page
 const els={
@@ -40,190 +56,172 @@ const els={
   infoDur: document.getElementById('infoDur'),
 };
 
-function fmt(s){
-  s=Math.max(0, Math.floor(s));
-  const m=Math.floor(s/60), sec=s%60;
-  return m+':'+String(sec).padStart(2,'0');
+function fmt(ms){
+  const s=Math.max(0, Math.floor((ms||0)/1000));
+  return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
 }
 
-function ensureAudio(){
-  if(audioCtx) return;
-  audioCtx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:48000});
-  master=audioCtx.createGain();
-  master.gain.value=0.84;
-  analyser=audioCtx.createAnalyser();
-  analyser.fftSize=1024;
-  master.connect(analyser);
-  analyser.connect(audioCtx.destination);
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-function stopOsc(){
-  oscillators.forEach(o=>{try{o.stop()}catch{}});
-  oscillators=[];
-}
+function setText(el, text){ if(el) el.textContent=text; }
 
-function playOsc(){
-  ensureAudio();
-  if(audioCtx.state==='suspended') audioCtx.resume();
-  stopOsc();
-  // create 3 detuned square-ish voices + bass
-  const baseFreq=[110, 138.59, 164.81]; // A2, C#3, E3
-  const detune=[-4,0,5];
-  for(let ch=0; ch<3; ch++){
-    if(chanMute[ch]) continue;
-    const osc=audioCtx.createOscillator();
-    const g=audioCtx.createGain();
-    const f=audioCtx.createBiquadFilter();
-    f.type='lowpass'; f.frequency.value=2800;
-    osc.type= ch===1 ? 'square' : 'triangle';
-    osc.frequency.value=baseFreq[ch] * (1 + Math.sin(Date.now()*0.001+ch)*0.002);
-    osc.detune.value=detune[ch];
-    g.gain.value= ch===1 ? 0.11 : 0.065;
-    // simple envelope wobble
-    const lfo=audioCtx.createOscillator();
-    const lfoGain=audioCtx.createGain();
-    lfo.frequency.value= 4.2 + ch*0.7;
-    lfoGain.gain.value= 6;
-    lfo.connect(lfoGain); lfoGain.connect(osc.detune);
-    lfo.start();
-    oscillators.push(lfo);
-    osc.connect(f); f.connect(g); g.connect(master);
-    osc.start();
-    oscillators.push(osc);
+function setPlayButton(){
+  for(const id of ['btnPlay','btnPlay2']){
+    const b=document.getElementById(id); if(b) b.textContent= playing ? '⏸' : '▶';
   }
-  // bass
-  if(!chanMute[0]){
-    const osc=audioCtx.createOscillator();
-    const g=audioCtx.createGain();
-    osc.type='sawtooth'; osc.frequency.value=55;
-    g.gain.value=0.055;
-    osc.connect(g); g.connect(master);
-    osc.start(); oscillators.push(osc);
-  }
+}
+
+function loopLabel(){ return loopMode===1?'1曲':loopMode===2?'全曲':'なし'; }
+
+function entryFrom(meta, extra){
+  const name=extra.file;
+  const ext='.'+name.split('.').pop().toLowerCase();
+  return {
+    title: meta.title || name.replace(/\.[^.]+$/,''),
+    author: meta.author || '',
+    format: meta.program || meta.type || ext.slice(1).toUpperCase(),
+    type: meta.type || '',
+    durationMs: meta.durationMs || 0,
+    subpath: meta.subpath || '',
+    ext,
+    ...extra,
+  };
 }
 
 function renderPlaylist(){
-  const pl=document.getElementById('playlist');
-  const pl2=document.getElementById('playlist2');
-  function html(){
-    return DEMO_TRACKS.map((t,i)=>`
-      <div class="track ${i===idx?'active':''}" data-i="${i}" onclick="selectTrack(${i}, true)">
+  const q=(document.getElementById('search')?.value||'').trim().toLowerCase();
+  const html=tracks.map((t,i)=>{
+    if(q && !`${t.title} ${t.author} ${t.format} ${t.chip} ${t.file}`.toLowerCase().includes(q)) return '';
+    return `
+      <div class="track ${t===current?'active':''}" data-i="${i}" onclick="selectTrack(${i}, true)">
         <span class="track-index mono">${String(i+1).padStart(2,'0')}</span>
         <span style="font-size:18px">${t.icon}</span>
-        <div class="track-main"><div class="track-title">${t.title}</div><div class="track-sub">${t.artist} • ${t.format}</div></div>
-        <span class="track-chip">${t.chip.split(' ')[0]}</span>
-        <span class="track-time mono">${fmt(t.dur)}</span>
-      </div>
-    `).join('');
-  }
-  if(pl) pl.innerHTML=html();
-  if(pl2) pl2.innerHTML=html();
-  const c=document.getElementById('plCount'); if(c) c.textContent=DEMO_TRACKS.length+' tracks';
-  const c2=document.getElementById('plCount2'); if(c2) c2.textContent=DEMO_TRACKS.length+' tracks';
+        <div class="track-main"><div class="track-title">${esc(t.title)}</div><div class="track-sub">${esc([t.author, t.format].filter(Boolean).join(' • '))}</div></div>
+        <span class="track-chip">${esc(t.chip)}</span>
+        <span class="track-time mono">${fmt(t.durationMs)}</span>
+      </div>`;
+  }).join('');
+  for(const id of ['playlist','playlist2']){ const pl=document.getElementById(id); if(pl) pl.innerHTML=html; }
+  for(const id of ['plCount','plCount2']){ const c=document.getElementById(id); if(c) c.textContent=tracks.length+' tracks'; }
 }
 
-window.selectTrack=(i, autoplay=false)=>{
-  idx=(i+DEMO_TRACKS.length)%DEMO_TRACKS.length;
-  cur=0; pausedAt=0;
-  const t=DEMO_TRACKS[idx];
-  if(els.title) els.title.textContent=t.title;
-  if(els.artist) els.artist.textContent=t.artist+' • '+t.format;
-  if(els.format) els.format.textContent=t.format;
-  if(els.chip) els.chip.textContent=t.chip;
-  if(els.art) els.art.textContent=t.icon;
-  if(els.info) els.info.textContent=`${t.ext} • ${fmt(t.dur)} • ${t.chip}`;
-  if(els.tot) els.tot.textContent=fmt(t.dur);
-  if(els.visLeft) els.visLeft.textContent=`${t.chip} • ${t.format} • CH A/B/C`;
-  if(els.infoTitle) els.infoTitle.textContent=t.title;
-  if(els.infoAuthor) els.infoAuthor.textContent=t.artist;
-  if(els.infoFormat) els.infoFormat.textContent=t.format+` (${t.ext})`;
-  if(els.infoChip) els.infoChip.textContent=t.chip;
-  if(els.infoDur) els.infoDur.textContent=`${fmt(t.dur)} • ループ: ${loopMode===1?'1曲':loopMode===2?'全曲':'なし'}`;
-  renderPlaylist();
-  updateProgress();
-  if(autoplay){
-    if(!playing) togglePlay();
-    else { // restart
-      startAt=audioCtx ? audioCtx.currentTime : 0;
-      playOsc();
-    }
-  } else if(playing){
-    startAt=audioCtx ? audioCtx.currentTime : 0;
-    playOsc();
-  }
-  // highlight speed
-  syncDocumentTitle();
-};
+function showTrack(t){
+  setText(els.title, t.title);
+  setText(els.artist, [t.author || 'Unknown', t.format].join(' • '));
+  setText(els.format, t.format);
+  setText(els.chip, t.chip);
+  setText(els.art, t.icon);
+  setText(els.info, `${t.ext} • ${fmt(t.durationMs)} • ${t.chip}`);
+  setText(els.visLeft, `${t.chip} • ${t.type || t.format}`);
+  setText(els.infoTitle, t.title);
+  setText(els.infoAuthor, t.author || '—');
+  setText(els.infoFormat, `${t.format} (${t.ext})`);
+  setText(els.infoChip, t.chip);
+  setText(els.infoDur, `${fmt(t.durationMs)} • ループ: ${loopLabel()}`);
+}
 
 function syncDocumentTitle(){
-  const t=DEMO_TRACKS[idx];
-  document.title = playing ? `▶ ${t.title} — ZXTune` : `${t.title} — ZXTune Web Player`;
-}
-
-function togglePlay(){
-  ensureAudio();
-  if(audioCtx.state==='suspended') audioCtx.resume();
-  playing=!playing;
-  const btn=document.getElementById('btnPlay')||document.getElementById('btnPlay2');
-  if(btn) btn.textContent= playing ? '⏸' : '▶';
-  if(playing){
-    startAt=audioCtx.currentTime - pausedAt;
-    playOsc();
-    tick();
-  } else {
-    pausedAt= cur;
-    stopOsc();
-    cancelAnimationFrame(raf);
-  }
-  syncDocumentTitle();
-}
-
-function tick(){
-  if(!playing) return;
-  const t=DEMO_TRACKS[idx];
-  if(audioCtx) cur= audioCtx.currentTime - startAt;
-  else cur+=0.016;
-  if(cur>= t.dur){
-    if(loopMode===1){
-      cur=0; startAt=audioCtx.currentTime;
-      playOsc();
-    } else if(loopMode===2 || shuffle){
-      nextTrack();
-      return;
-    } else {
-      cur=t.dur;
-      playing=false;
-      const btn=document.getElementById('btnPlay')||document.getElementById('btnPlay2');
-      if(btn) btn.textContent='▶';
-      stopOsc();
-      syncDocumentTitle();
-      updateProgress();
-      return;
-    }
-  }
-  updateProgress();
-  raf=requestAnimationFrame(tick);
+  if(!current) return;
+  document.title = playing ? `▶ ${current.title} — ZXTune` : `${current.title} — ZXTune Web Player`;
 }
 
 function updateProgress(){
-  const t=DEMO_TRACKS[idx];
-  const pct=Math.min(1, Math.max(0, cur / t.dur));
+  const dur=current?.durationMs||0;
+  const pct=dur ? Math.min(1, Math.max(0, posMs/dur)) : 0;
   if(els.fill) els.fill.style.width=(pct*100)+'%';
   if(els.handle) els.handle.style.left=(pct*100)+'%';
-  if(els.cur) els.cur.textContent=fmt(cur);
-  if(els.remain) els.remain.textContent='-'+fmt(Math.max(0, t.dur - cur));
-  if(els.tot) els.tot.textContent=fmt(t.dur);
+  setText(els.cur, fmt(posMs));
+  setText(els.remain, '-'+fmt(Math.max(0, dur-posMs)));
+  setText(els.tot, fmt(dur));
 }
 
-function prevTrack(){ selectTrack(idx-1, true); }
+// Opens the entry in the engine unless it already is. Resolves false when a later
+// selection overtook this one or the engine refused the file.
+async function openInEngine(t){
+  if(opened===t) return true;
+  const token=++openToken;
+  try{
+    const meta=await player.open(t.bytes, t.subpath);
+    if(token!==openToken) return false;
+    if(meta.durationMs) t.durationMs=meta.durationMs;
+    opened=t;
+    posMs=0;
+    return true;
+  }catch(e){
+    if(token===openToken){ opened=null; toast(`${t.file}: ${e.message}`, '⚠️'); }
+    return false;
+  }
+}
+
+async function startPlayback(){
+  if(!player || !current) return;
+  if(!await openInEngine(current)) { playing=false; setPlayButton(); return; }
+  await player.play();
+  playing=true;
+  setPlayButton(); syncDocumentTitle(); updateProgress();
+}
+
+window.selectTrack=async (i, autoplay=false)=>{
+  if(!tracks.length) return;
+  const t=tracks[(i+tracks.length)%tracks.length];
+  const wasPlaying=playing;
+  current=t;
+  posMs=0;
+  showTrack(t);
+  renderPlaylist();
+  updateProgress();
+  if(autoplay || wasPlaying) await startPlayback();
+  if(current!==t) return;     // another selection came in while this one was opening
+  showTrack(t); renderPlaylist(); updateProgress();
+  syncDocumentTitle();
+};
+
+async function togglePlay(){
+  if(!player){ toast(bootError ? `このブラウザでは再生できません: ${bootError}` : 'エンジンを読み込み中…', '⚠️'); return; }
+  if(!current) return;
+  if(playing){
+    await player.pause();
+    playing=false;
+    setPlayButton(); syncDocumentTitle();
+  } else {
+    await startPlayback();
+  }
+}
+
+function onEnded(){
+  if(loopMode===1){
+    player.seek(0); posMs=0; updateProgress();
+  } else if(loopMode===2 || shuffle){
+    nextTrack();
+  } else {
+    playing=false;
+    player.pause();
+    opened=null;               // the engine ran off the end; reopen on the next Play
+    posMs=current?.durationMs||0;
+    setPlayButton(); syncDocumentTitle(); updateProgress();
+  }
+}
+
+function seekTo(ms){
+  if(!current) return;
+  posMs=Math.max(0, Math.min(current.durationMs||0, ms));
+  if(player && opened===current) player.seek(posMs);
+  updateProgress();
+}
+
+function indexOfCurrent(){ return Math.max(0, tracks.indexOf(current)); }
+function prevTrack(){ selectTrack(indexOfCurrent()-1, true); }
 function nextTrack(){
-  if(shuffle){
+  if(shuffle && tracks.length>1){
     let n;
-    do { n=Math.floor(Math.random()*DEMO_TRACKS.length); } while(DEMO_TRACKS.length>1 && n===idx);
+    do { n=Math.floor(Math.random()*tracks.length); } while(tracks[n]===current);
     selectTrack(n, true);
-  } else selectTrack(idx+1, true);
+  } else selectTrack(indexOfCurrent()+1, true);
 }
 
+// Bit n of the core's channel mask silences channel n.
 window.toggleChan=(ch)=>{
   chanMute[ch]=!chanMute[ch];
   const el=document.getElementById(['chA','chB','chC'][ch]);
@@ -231,83 +229,77 @@ window.toggleChan=(ch)=>{
     el.style.opacity=chanMute[ch]?0.45:1;
     el.style.textDecoration=chanMute[ch]?'line-through':'none';
   }
-  if(playing) playOsc();
+  const mask=chanMute.reduce((m, muted, i)=> muted ? m|(1<<i) : m, 0);
+  player?.setIntProperty(CHANNELS_MASK, mask);
   toast(chanMute[ch]? `CH ${['A','B','C'][ch]} ミュート` : `CH ${['A','B','C'][ch]} オン`, chanMute[ch]?'🔇':'🔊');
 };
 
 // bind controls
 function bindControls(){
-  const bPlay=document.getElementById('btnPlay'); if(bPlay) bPlay.onclick=togglePlay;
-  const bPlay2=document.getElementById('btnPlay2'); if(bPlay2) bPlay2.onclick=togglePlay;
-  const bPrev=document.getElementById('btnPrev'); if(bPrev) bPrev.onclick=prevTrack;
-  const bPrev2=document.getElementById('btnPrev2'); if(bPrev2) bPrev2.onclick=prevTrack;
-  const bNext=document.getElementById('btnNext'); if(bNext) bNext.onclick=nextTrack;
-  const bNext2=document.getElementById('btnNext2'); if(bNext2) bNext2.onclick=nextTrack;
+  for(const id of ['btnPlay','btnPlay2']){ const b=document.getElementById(id); if(b) b.onclick=togglePlay; }
+  for(const id of ['btnPrev','btnPrev2']){ const b=document.getElementById(id); if(b) b.onclick=prevTrack; }
+  for(const id of ['btnNext','btnNext2']){ const b=document.getElementById(id); if(b) b.onclick=nextTrack; }
   const bLoop=document.getElementById('btnLoop'); const bLoop2=document.getElementById('btnLoop2');
   function toggleLoop(){
     loopMode=(loopMode+1)%3;
     const label=['↻','↻•1','↻•∞'][loopMode];
-    if(bLoop) bLoop.textContent=label;
-    if(bLoop2) bLoop2.textContent=label;
-    if(bLoop) bLoop.classList.toggle('active', loopMode!==0);
-    if(bLoop2) bLoop2.classList.toggle('active', loopMode!==0);
+    for(const b of [bLoop,bLoop2]) if(b){ b.textContent=label; b.classList.toggle('active', loopMode!==0); }
     toast(loopMode===0?'ループ: なし': loopMode===1?'ループ: 1曲リピート':'ループ: 全曲', '↻');
-    if(els.infoDur) els.infoDur.textContent=`${fmt(DEMO_TRACKS[idx].dur)} • ループ: ${loopMode===1?'1曲':loopMode===2?'全曲':'なし'}`;
+    if(current) setText(els.infoDur, `${fmt(current.durationMs)} • ループ: ${loopLabel()}`);
   }
   if(bLoop) bLoop.onclick=toggleLoop;
   if(bLoop2) bLoop2.onclick=toggleLoop;
   const bSh=document.getElementById('btnShuffle'); const bSh2=document.getElementById('btnShuffle2');
   function toggleShuffle(){
     shuffle=!shuffle;
-    if(bSh) bSh.classList.toggle('active', shuffle);
-    if(bSh2) bSh2.classList.toggle('active', shuffle);
+    for(const b of [bSh,bSh2]) if(b) b.classList.toggle('active', shuffle);
     toast(shuffle?'シャッフル: ON':'シャッフル: OFF', '⇄');
   }
   if(bSh) bSh.onclick=toggleShuffle;
   if(bSh2) bSh2.onclick=toggleShuffle;
 
   const vol=document.getElementById('vol'); const vol2=document.getElementById('vol2');
-  function onVol(e){
-    const v=e.target.value/100;
-    if(master) master.gain.value=v*0.9;
-    if(vol) vol.value=e.target.value;
-    if(vol2) vol2.value=e.target.value;
+  let lastVol=84;
+  function applyVol(v){
+    if(gain) gain.gain.value=v/100;
+    if(vol) vol.value=v;
+    if(vol2) vol2.value=v;
+    const m=document.getElementById('btnMute2'); if(m) m.textContent= Number(v)===0 ? '🔇' : '🔊';
   }
-  if(vol) vol.oninput=onVol;
-  if(vol2) vol2.oninput=onVol;
-
-  const speed=document.getElementById('speed');
-  if(speed) speed.oninput=e=>{
-    document.getElementById('speedVal').textContent=e.target.value+'%';
-    if(audioCtx) audioCtx.dispatchEvent?.(new Event('speed'));
+  if(vol) vol.oninput=e=>applyVol(e.target.value);
+  if(vol2) vol2.oninput=e=>applyVol(e.target.value);
+  const bMute=document.getElementById('btnMute2');
+  if(bMute) bMute.onclick=()=>{
+    const v=Number((vol2||vol)?.value ?? 84);
+    if(v>0){ lastVol=v; applyVol(0); } else applyVol(lastVol||84);
   };
+  bindControls.applyVol=()=>applyVol((vol||vol2)?.value ?? 84);
+
+  const search=document.getElementById('search');
+  if(search) search.oninput=renderPlaylist;
 
   // progress seek
   [document.getElementById('progress'), document.getElementById('progress2')].forEach(p=>{
     if(!p) return;
     let dragging=false;
-    function seek(e){
+    function ratio(e){
       const r=p.getBoundingClientRect();
       const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
-      const pct=Math.min(1, Math.max(0, x/r.width));
-      const t=DEMO_TRACKS[idx];
-      cur=pct*t.dur;
-      pausedAt=cur;
-      if(playing && audioCtx) startAt=audioCtx.currentTime - cur;
-      updateProgress();
+      return Math.min(1, Math.max(0, x/r.width));
     }
-    p.addEventListener('pointerdown', e=>{ dragging=true; p.setPointerCapture(e.pointerId); seek(e); });
-    p.addEventListener('pointermove', e=>{ if(dragging) seek(e); });
-    p.addEventListener('pointerup', ()=> dragging=false);
-    p.addEventListener('click', seek);
+    // the engine restarts rendering on every seek, so only the release is sent to it
+    p.addEventListener('pointerdown', e=>{ dragging=true; p.setPointerCapture(e.pointerId); posMs=ratio(e)*(current?.durationMs||0); updateProgress(); });
+    p.addEventListener('pointermove', e=>{ if(dragging){ posMs=ratio(e)*(current?.durationMs||0); updateProgress(); } });
+    p.addEventListener('pointerup', e=>{ if(dragging){ dragging=false; seekTo(ratio(e)*(current?.durationMs||0)); } });
   });
 
   // keyboard
   window.addEventListener('keydown', e=>{
+    if(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
     if(e.code==='Space'){ e.preventDefault(); togglePlay(); }
-    if(e.code==='ArrowRight'){ cur=Math.min(DEMO_TRACKS[idx].dur, cur+5); pausedAt=cur; if(playing&&audioCtx) startAt=audioCtx.currentTime - cur; updateProgress(); }
-    if(e.code==='ArrowLeft'){ cur=Math.max(0, cur-5); pausedAt=cur; if(playing&&audioCtx) startAt=audioCtx.currentTime - cur; updateProgress(); }
-    if(e.key==='m' || e.key==='M'){ chanMute[0]=!chanMute[0]; toggleChan(0); }
+    if(e.code==='ArrowRight'){ seekTo(posMs+5000); }
+    if(e.code==='ArrowLeft'){ seekTo(posMs-5000); }
+    if(e.key==='m' || e.key==='M'){ toggleChan(0); }
     if(e.key==='l' || e.key==='L'){ if(bLoop) bLoop.click(); else if(bLoop2) bLoop2.click(); }
     if(e.key==='n' || e.key==='N'){ nextTrack(); }
     if(e.key==='p' || e.key==='P'){ prevTrack(); }
@@ -322,35 +314,52 @@ function bindControls(){
     z.addEventListener('dragleave', ()=> z.classList.remove('drag'));
     z.addEventListener('drop', e=>{
       e.preventDefault(); z.classList.remove('drag');
-      const files=e.dataTransfer.files;
+      const files=[...e.dataTransfer.files];
       if(files.length) handleFiles(files);
     });
   });
   ['fileInput','fileInput2'].forEach(id=>{
     const inp=document.getElementById(id);
-    if(inp) inp.addEventListener('change', e=> handleFiles(e.target.files));
+    // copied first: clearing the input (so the same file can be picked again) empties its live FileList
+    if(inp) inp.addEventListener('change', e=>{ handleFiles([...e.target.files]); e.target.value=''; });
   });
 }
 
-function handleFiles(files){
-  const names=[...files].map(f=>f.name).join(', ');
-  toast(`読み込み: ${names} — デモではプレイリストに追加`, '📁');
-  // add to demo playlist as fake entries
+// A file may be an archive or a multi-song rip: every module found in it is listed.
+async function handleFiles(files){
+  await booting;
+  if(!player){ toast(bootError ? `このブラウザでは再生できません: ${bootError}` : 'エンジンを読み込み中…', '⚠️'); return; }
+  let first=-1;
   for(const f of files){
-    const ext='.'+f.name.split('.').pop().toLowerCase();
-    DEMO_TRACKS.push({title:f.name.replace(/\.[^.]+$/,''), artist:'Local file', format:ext.toUpperCase()+' file', chip:'Auto detect', dur: 120+Math.floor(Math.random()*120), ext, icon:"📄", color:"#B8A6FF"});
+    const bytes=new Uint8Array(await f.arrayBuffer());
+    let found;
+    try{ found=await player.detect(bytes); }
+    catch(e){ toast(`${f.name}: ${e.message}`, '⚠️'); continue; }
+    if(!found.length){ toast(`${f.name}: 再生できる曲が見つかりません`, '⚠️'); continue; }
+    if(first<0) first=tracks.length;
+    for(const meta of found){
+      tracks.push(entryFrom(meta, {file:f.name, bytes, chip:'Local', icon:'📄', local:true}));
+    }
+    toast(`${f.name}: ${found.length}曲を追加`, '📁');
   }
   renderPlaylist();
-  selectTrack(DEMO_TRACKS.length - files.length, true);
+  if(first>=0) selectTrack(first, true);
 }
 
 window.shufflePlaylist=()=>{
-  for(let i=DEMO_TRACKS.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [DEMO_TRACKS[i],DEMO_TRACKS[j]]=[DEMO_TRACKS[j],DEMO_TRACKS[i]]; }
+  for(let i=tracks.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [tracks[i],tracks[j]]=[tracks[j],tracks[i]]; }
   renderPlaylist(); toast('シャッフルしました','⇄');
 };
 window.clearPlaylist=()=>{
-  DEMO_TRACKS.splice(8);
-  idx=0; renderPlaylist(); selectTrack(0,false); toast('プレイリストをリセット','🗑️');
+  const wasLocal=current?.local;
+  tracks=tracks.filter(t=>!t.local);
+  tracks.sort((a,b)=>SAMPLES.findIndex(s=>s.file===a.file)-SAMPLES.findIndex(s=>s.file===b.file));
+  if(wasLocal){
+    if(playing){ player.pause(); playing=false; setPlayButton(); }
+    opened=null;
+    selectTrack(0,false);
+  } else renderPlaylist();
+  toast('プレイリストをリセット','🗑️');
 };
 
 // visualization — spectrum + waveform switch
@@ -368,6 +377,10 @@ window.clearPlaylist=()=>{
   const dataArray = new Uint8Array(256);
   let mode=0; //0 spectrum,1 waveform
   canvas.addEventListener('click', ()=>{ mode^=1; toast(mode?'波形表示':'スペクトラム表示', mode?'〰️':'▮▮'); });
+  window.addEventListener('keydown', e=>{
+    if(e.target instanceof HTMLInputElement) return;
+    if(e.key==='s' || e.key==='S'){ mode^=1; toast(mode?'波形表示':'スペクトラム表示', mode?'〰️':'▮▮'); }
+  });
 
   function draw(){
     requestAnimationFrame(draw);
@@ -433,16 +446,14 @@ window.clearPlaylist=()=>{
         const bh=v*h;
         const x=w*0.03 + i*barW;
         const y=h - bh - 12*DPR;
-        ctx.fillStyle= playing ? 'rgba(0,255,209,0.9)' : 'rgba(255,255,255,0.10)';
+        ctx.fillStyle='rgba(255,255,255,0.10)';
         ctx.beginPath(); ctx.roundRect(x,y,barW-3*DPR,bh,[3,3,1,1]); ctx.fill();
       }
-      if(!playing){
-        ctx.fillStyle='rgba(255,255,255,0.28)';
-        ctx.font=`${11*DPR}px JetBrains Mono, monospace`;
-        ctx.textAlign='center';
-        ctx.fillText('▶ を押して再生 — クリックで波形切替', w/2, h/2);
-        ctx.textAlign='left';
-      }
+      ctx.fillStyle='rgba(255,255,255,0.28)';
+      ctx.font=`${11*DPR}px JetBrains Mono, monospace`;
+      ctx.textAlign='center';
+      ctx.fillText(bootError ? 'このブラウザでは再生できません' : !player ? 'エンジンを読み込み中…' : '▶ を押して再生 — クリックで波形切替', w/2, h/2);
+      ctx.textAlign='left';
     }
     // bottom line
     ctx.strokeStyle='rgba(255,255,255,0.06)';
@@ -452,10 +463,55 @@ window.clearPlaylist=()=>{
   requestAnimationFrame(draw);
 })();
 
-// init
-renderPlaylist();
-selectTrack(0,false);
-bindControls();
+async function fetchSample(file){
+  const res=await fetch(`${ENGINE_BASE}/tunes/${file}`);
+  if(!res.ok) throw new Error(`${res.status} ${file}`);
+  return new Uint8Array(await res.arrayBuffer());
+}
+
+async function boot(){
+  bindControls();
+  setText(els.title, 'エンジンを読み込み中…');
+  try{
+    const { ZXTunePlayer } = await import(`${ENGINE_BASE}/player.mjs`);
+    player=await ZXTunePlayer.create({ base: ENGINE_BASE });
+  }catch(e){
+    bootError=e?.message ?? String(e);
+    setText(els.title, 'このブラウザでは再生できません');
+    setText(els.artist, bootError);
+    return;
+  }
+  // volume sits after the analyser so the visualizer does not shrink with it
+  const ctx=player.context;
+  analyser=player.analyser;
+  analyser.fftSize=1024;
+  analyser.disconnect();
+  gain=ctx.createGain();
+  analyser.connect(gain);
+  gain.connect(ctx.destination);
+  bindControls.applyVol();
+  player.onposition=ms=>{ if(opened===current){ posMs=ms; updateProgress(); } };
+  player.onended=onEnded;
+
+  // fetches overlap; detection is one at a time, since the worker's replies carry no id
+  const fetched=SAMPLES.map(s=>fetchSample(s.file).catch(e=>e));
+  const loaded=[];
+  for(const [i, s] of SAMPLES.entries()){
+    try{
+      const bytes=await fetched[i];
+      if(bytes instanceof Error) throw bytes;
+      const [meta]=await player.detect(bytes);
+      if(meta) loaded.push(entryFrom(meta, {...s, bytes}));
+    }catch(e){
+      console.warn(s.file, e);
+    }
+  }
+  tracks=[...loaded, ...tracks];
+  if(!tracks.length){ setText(els.title, 'サンプル曲を読み込めませんでした'); return; }
+  selectTrack(0,false);
+}
+
+const booting=boot();
 
 // expose for console
-window.ZXTUNE_PLAYER={nextTrack, prevTrack, togglePlay, selectTrack};
+window.ZXTUNE_PLAYER={nextTrack, prevTrack, togglePlay, selectTrack, get player(){ return player; }};

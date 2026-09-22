@@ -2,7 +2,7 @@
   "name": "ZXTune — Chiptune Universe",
   "short_name": "ZXTune",
   "description": "100+チップチューンを一つのプレイヤーで。ブラウザで今すぐ再生。",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#070A12",
   "theme_color": "#00FFD1",
