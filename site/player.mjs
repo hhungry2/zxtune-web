@@ -113,6 +113,12 @@ export class ZXTunePlayer {
     this.worker.postMessage({ type: 'seek', ms: Math.round(ms), generation });
   }
 
+  // What the library was built with: [{id, description, caps}], caps as in core/plugin_attrs.h.
+  async plugins() {
+    this.worker.postMessage({ type: 'plugins' });
+    return (await this.reply('plugins')).plugins;
+  }
+
   // Integer player parameter, e.g. zxtune.core.channels_mask. Kept for later tracks too.
   setIntProperty(name, value) {
     this.worker.postMessage({ type: 'property', name, value });

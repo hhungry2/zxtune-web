@@ -121,6 +121,12 @@ self.onmessage = async event => {
       }
       break;
 
+    case 'plugins': {
+      const list = zxtune.plugins();
+      self.postMessage({ type: 'plugins', plugins: [...Array(list.length).keys()].map(i => ({ ...list[i] })) });
+      break;
+    }
+
     case 'property':
       properties.set(message.name, message.value);
       player?.setIntProperty(message.name, message.value);

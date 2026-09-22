@@ -9,6 +9,7 @@
 #include "analysis/path.h"
 #include "binary/container_factories.h"
 #include "core/data_location.h"
+#include "core/plugin.h"
 #include "core/service.h"
 #include "module/additional_files.h"
 #include "module/attributes.h"
@@ -390,6 +391,29 @@ namespace
       RethrowMalformed();
     }
   }
+
+  //! Every plugin the library was built with, players and containers alike:
+  //! {id, description, caps}. caps is the bitmask from core/plugin_attrs.h.
+  emscripten::val plugins()
+  {
+    class PluginsCollector : public ZXTune::PluginVisitor
+    {
+    public:
+      void Visit(const ZXTune::Plugin& plugin) override
+      {
+        auto entry = emscripten::val::object();
+        entry.set("id", std::string{plugin.Id()});
+        entry.set("description", std::string{plugin.Description()});
+        entry.set("caps", plugin.Capabilities());
+        Result.call<void>("push", entry);
+      }
+
+      emscripten::val Result = emscripten::val::array();
+    };
+    PluginsCollector collector;
+    ZXTune::EnumeratePlugins(collector);
+    return collector.Result;
+  }
 }  // namespace
 
 EMSCRIPTEN_BINDINGS(zxtune)
@@ -413,6 +437,7 @@ EMSCRIPTEN_BINDINGS(zxtune)
 
   emscripten::function("load", &load);
   emscripten::function("detect", &detect);
+  emscripten::function("plugins", &plugins);
 
   emscripten::function("getOption", &getOption);
   emscripten::function("setOption", &setOption);
