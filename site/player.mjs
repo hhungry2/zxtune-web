@@ -113,6 +113,11 @@ export class ZXTunePlayer {
     this.worker.postMessage({ type: 'seek', ms: Math.round(ms), generation });
   }
 
+  // Integer player parameter, e.g. zxtune.core.channels_mask. Kept for later tracks too.
+  setIntProperty(name, value) {
+    this.worker.postMessage({ type: 'property', name, value });
+  }
+
   play() {
     return this.context.resume();
   }

@@ -17,6 +17,7 @@ let ended = false;
 let rate = 48000;
 let loadEma = 0;
 let rendered = 0;
+const properties = new Map();   // outlive the player, so a muted channel stays muted on the next track
 
 const ready = (async () => {
   zxtune = await createZXTune();
@@ -90,6 +91,7 @@ self.onmessage = async event => {
           };
           player = track.createPlayer(message.sampleRate);
           track.delete();
+          for (const [name, value] of properties) player.setIntProperty(name, value);
           return info;
         });
         self.postMessage({ type: 'opened', meta, generation });
@@ -117,6 +119,11 @@ self.onmessage = async event => {
         ended = false;
         player.seek(message.ms);
       }
+      break;
+
+    case 'property':
+      properties.set(message.name, message.value);
+      player?.setIntProperty(message.name, message.value);
       break;
 
     case 'stop':
