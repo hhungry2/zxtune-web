@@ -17,7 +17,7 @@ fi
 rm -rf "$dist"
 mkdir -p "$dist/tunes"
 
-cp "$here/index.html" "$here/player.mjs" "$here/zxtune-processor.js" "$here/zxtune-engine.mjs" "$dist/"
+cp "$here/index.html" "$here/player.mjs" "$here/zxtune-processor.js" "$here/zxtune-engine.mjs" "$here/sw.js" "$dist/"
 cp "$bin/zxtune.mjs" "$bin/zxtune.wasm" "$dist/"
 
 # One tune per sound chip, matching the rack in index.html.
