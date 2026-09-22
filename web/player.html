@@ -50,7 +50,7 @@
       <div class="playlist" id="playlist2" style="flex:1;overflow:auto"></div>
       <div style="padding:10px;border-top:1px solid var(--border);display:flex;gap:6px">
         <button class="btn btn-ghost" style="flex:1;font-size:12px;padding:8px" onclick="clearPlaylist()">クリア</button>
-        <button class="btn btn-ghost" style="flex:1;font-size:12px;padding:8px" onclick="toast('XSPF エクスポート対応予定')">XSPF保存</button>
+        <button class="btn btn-ghost" style="flex:1;font-size:12px;padding:8px" onclick="exportXspf()">XSPF保存</button>
       </div>
     </div>
 
@@ -91,7 +91,7 @@
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
           <button class="btn btn-primary" onclick="document.getElementById('fileInput2').click()">ファイルを選択</button>
-          <button class="btn btn-ghost" onclick="toast('URL読み込み: zxtunes.com / HVSC の直リンクに対応予定')">URLから読み込み</button>
+          <button class="btn btn-ghost" onclick="openUrlDialog()">URLから読み込み</button>
         </div>
         <input type="file" id="fileInput2" hidden multiple>
       </div>

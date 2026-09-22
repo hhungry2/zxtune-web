@@ -510,3 +510,13 @@ img{max-width:100%}
   font-size:13px;opacity:0;pointer-events:none;transition:.3s;z-index:80;box-shadow:0 12px 32px rgba(0,0,0,.4)
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* URL dialog (player.js) */
+.url-dialog{width:min(520px, calc(100vw - 32px));padding:0;border:1px solid var(--border-strong);border-radius:16px;background:var(--bg-card);color:var(--text);box-shadow:0 24px 64px rgba(0,0,0,.55)}
+.url-dialog::backdrop{background:rgba(7,10,18,.72);backdrop-filter:blur(4px)}
+.url-dialog form{display:grid;gap:12px;padding:20px}
+.url-dialog h3{margin:0;font-size:16px}
+.url-dialog input{width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font:13px 'JetBrains Mono',monospace;outline:none}
+.url-dialog input:focus{border-color:var(--cyan)}
+.url-dialog p{margin:0;color:var(--muted);font-size:12px;line-height:1.6}
+.url-dialog-actions{display:flex;justify-content:flex-end;gap:8px}

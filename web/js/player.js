@@ -400,26 +400,195 @@ function bindSettings(){
   bind('dcFilter', 'dc', null, 'DC除去フィルタ');
 }
 
-// A file may be an archive or a multi-song rip: every module found in it is listed.
+function engineUnavailable(){
+  if(player) return false;
+  toast(bootError ? `このブラウザでは再生できません: ${bootError}` : 'エンジンを読み込み中…', '⚠️');
+  return true;
+}
+
+// Content may be an archive or a multi-song rip: every module found in it is
+// listed. Returns the index of the first new entry, or -1.
+async function addContent(name, bytes, extra){
+  let found;
+  try{ found=await player.detect(bytes); }
+  catch(e){ toast(`${name}: ${e.message}`, '⚠️'); return -1; }
+  if(!found.length){ toast(`${name}: 再生できる曲が見つかりません`, '⚠️'); return -1; }
+  const first=tracks.length;
+  for(const meta of found){
+    tracks.push(entryFrom(meta, {file:name, bytes, chip:'Local', icon:'📄', local:true, ...extra}));
+  }
+  toast(`${name}: ${found.length}曲を追加`, '📁');
+  return first;
+}
+
 async function handleFiles(files){
   await booting;
-  if(!player){ toast(bootError ? `このブラウザでは再生できません: ${bootError}` : 'エンジンを読み込み中…', '⚠️'); return; }
+  if(engineUnavailable()) return;
   let first=-1;
   for(const f of files){
-    const bytes=new Uint8Array(await f.arrayBuffer());
-    let found;
-    try{ found=await player.detect(bytes); }
-    catch(e){ toast(`${f.name}: ${e.message}`, '⚠️'); continue; }
-    if(!found.length){ toast(`${f.name}: 再生できる曲が見つかりません`, '⚠️'); continue; }
-    if(first<0) first=tracks.length;
-    for(const meta of found){
-      tracks.push(entryFrom(meta, {file:f.name, bytes, chip:'Local', icon:'📄', local:true}));
-    }
-    toast(`${f.name}: ${found.length}曲を追加`, '📁');
+    const at=await addContent(f.name, new Uint8Array(await f.arrayBuffer()), {source:'file'});
+    if(first<0) first=at;
   }
   renderPlaylist();
   if(first>=0) selectTrack(first, true);
 }
+
+// --- loading from a URL -------------------------------------------------------
+// The browser only hands over another site's bytes when that site allows it
+// (CORS). raw.githubusercontent.com and api.modarchive.org do; pages that merely
+// link to a tune usually do not. Nothing is proxied: the request goes from the
+// visitor's browser straight to the URL they gave.
+const MAX_DOWNLOAD = 64 << 20;
+
+// Page links on hosts that also serve the raw file are rewritten to the latter.
+function directUrl(input){
+  const url=new URL(String(input).trim());
+  if(url.protocol!=='https:' && url.protocol!=='http:') throw new Error('http(s) の URL を入力してください');
+  const gh=url.hostname==='github.com' && url.pathname.match(/^\/([^/]+)\/([^/]+)\/(?:blob|raw)\/(.+)$/);
+  if(gh) return new URL(`https://raw.githubusercontent.com/${gh[1]}/${gh[2]}/${gh[3]}`);
+  if(/(^|\.)modarchive\.org$/.test(url.hostname) && url.hostname!=='api.modarchive.org'){
+    const id=url.searchParams.get('moduleid') || url.searchParams.get('query') || url.search.match(/^\?(\d+)$/)?.[1];
+    if(id && /^\d+$/.test(id)) return new URL(`https://api.modarchive.org/downloads.php?moduleid=${id}`);
+  }
+  return url;
+}
+
+function nameFromUrl(url){
+  const id=url.hostname==='api.modarchive.org' && url.searchParams.get('moduleid');
+  if(id) return `modarchive-${id}`;
+  const last=url.pathname.split('/').filter(Boolean).pop();
+  try{ return last ? decodeURIComponent(last) : url.hostname; }catch{ return last; }
+}
+
+async function fetchBytes(url){
+  let res;
+  try{ res=await fetch(url, {mode:'cors', credentials:'omit'}); }
+  catch{
+    throw new Error('読み込めませんでした。このサーバーがブラウザからの直接読み込みを許可していない (CORS) か、接続できません');
+  }
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  const size=Number(res.headers.get('Content-Length')||0);
+  if(size>MAX_DOWNLOAD) throw new Error(`${(size/1048576).toFixed(0)}MB は大きすぎます (上限 ${MAX_DOWNLOAD>>20}MB)`);
+  const bytes=new Uint8Array(await res.arrayBuffer());
+  if(bytes.length>MAX_DOWNLOAD) throw new Error(`上限 ${MAX_DOWNLOAD>>20}MB を超えています`);
+  return bytes;
+}
+
+// Fetches, detects and lists. Resolves the index of the first new entry, or -1.
+async function addFromUrl(input){
+  let url;
+  try{ url=directUrl(input); }
+  catch(e){ toast(e instanceof TypeError ? 'URL の形式が正しくありません' : e.message, '⚠️'); return -1; }
+  toast(`読み込み中: ${url.href}`, '🌐');
+  let bytes;
+  try{ bytes=await fetchBytes(url.href); }
+  catch(e){ toast(`${nameFromUrl(url)}: ${e.message}`, '⚠️'); return -1; }
+  return addContent(nameFromUrl(url), bytes, {source:'url', url:url.href, icon:'🌐', chip:'URL'});
+}
+
+async function loadFromUrl(input){
+  await booting;
+  if(engineUnavailable()) return;
+  const first=await addFromUrl(input);
+  renderPlaylist();
+  if(first>=0) selectTrack(first, true);
+}
+
+let urlDialog=null;
+window.openUrlDialog=()=>{
+  if(!urlDialog){
+    urlDialog=document.createElement('dialog');
+    urlDialog.className='url-dialog';
+    urlDialog.innerHTML=`
+      <form method="dialog">
+        <h3>URLから読み込み</h3>
+        <input name="url" type="url" required placeholder="https://raw.githubusercontent.com/…/tune.pt3" autocomplete="url" spellcheck="false">
+        <p>GitHub のファイル URL と ModArchive のモジュールページは、そのまま貼り付けられます。
+        ほかのサイトは、ブラウザからの直接読み込み (CORS) を許可している場合だけ読めます。</p>
+        <div class="url-dialog-actions">
+          <button class="btn btn-ghost" type="button" data-cancel>キャンセル</button>
+          <button class="btn btn-primary" value="load">読み込む</button>
+        </div>
+      </form>`;
+    document.body.append(urlDialog);
+    // Escape and Enter are handled here rather than left to the browser, whose
+    // close request and implicit submission both depend on how the key arrived.
+    // Cancel is a plain button, so nothing but "load" can submit.
+    urlDialog.addEventListener('keydown', e=>{
+      if(e.key==='Escape'){ e.preventDefault(); urlDialog.close('cancel'); }
+      if(e.key==='Enter' && e.target.matches('input')){ e.preventDefault(); urlDialog.querySelector('form').requestSubmit(urlDialog.querySelector('[value=load]')); }
+    });
+    urlDialog.addEventListener('click', e=>{ if(e.target===urlDialog || e.target.closest('[data-cancel]')) urlDialog.close('cancel'); });
+    urlDialog.addEventListener('close', ()=>{
+      const input=urlDialog.querySelector('input');
+      if(urlDialog.returnValue==='load' && input.value) loadFromUrl(input.value);
+    });
+  }
+  urlDialog.returnValue='';
+  urlDialog.showModal();
+  urlDialog.querySelector('input').select();
+};
+
+// --- XSPF export --------------------------------------------------------------
+// Written the way zxtune-qt writes it (playlist version 1: text fields
+// percent-encoded, "location?subpath"), so the desktop and Android players can
+// read it back. Local files can only be named, not located.
+function xmlText(s){
+  return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+const pct=s=>encodeURIComponent(s);
+
+function trackLocation(t){
+  const base= t.source==='url' ? t.url
+    : t.source==='sample' ? new URL(`${ENGINE_BASE}/tunes/${t.file}`).href
+    : encodeURI(t.file);
+  return t.subpath ? `${base}?${t.subpath}` : base;
+}
+
+function xspfExtension(props, indent){
+  const lines=props.filter(([, v])=>v!=='' && v!=null)
+    .map(([k, v])=>`${indent}  <property name="${xmlText(k)}">${xmlText(v)}</property>`);
+  return `${indent}<extension application="http://zxtune.googlecode.com">\n${lines.join('\n')}\n${indent}</extension>`;
+}
+
+function buildXspf(list){
+  const items=list.map(t=>{
+    const fields=[`      <location>${xmlText(trackLocation(t))}</location>`];
+    if(t.author) fields.push(`      <creator>${xmlText(pct(t.author))}</creator>`);
+    fields.push(`      <title>${xmlText(pct(t.title))}</title>`);
+    if(t.durationMs) fields.push(`      <duration>${t.durationMs}</duration>`);
+    fields.push(xspfExtension([['Type', t.type && pct(t.type)], ['Program', t.format && t.format!==t.type ? pct(t.format) : '']], '      '));
+    return `    <track>\n${fields.join('\n')}\n    </track>`;
+  });
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<playlist version="1" xmlns="http://xspf.org/ns/0/">',
+    xspfExtension([
+      ['zxtune.app.playlist.creator', pct('zxtune-web')],
+      ['zxtune.app.playlist.name', pct('ZXTune Web')],
+      ['zxtune.app.playlist.version', 1],
+      ['zxtune.app.playlist.items', list.length],
+    ], '  '),
+    '  <trackList>',
+    ...items,
+    '  </trackList>',
+    '</playlist>',
+    '',
+  ].join('\n');
+}
+
+window.exportXspf=()=>{
+  if(!tracks.length){ toast('プレイリストが空です', '⚠️'); return; }
+  const blob=new Blob([buildXspf(tracks)], {type:'application/xspf+xml'});
+  const a=document.createElement('a');
+  const d=new Date();
+  a.download=`zxtune-playlist-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.xspf`;
+  a.href=URL.createObjectURL(blob);
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  const locals=tracks.filter(t=>t.source==='file').length;
+  toast(locals ? `${tracks.length}曲を保存 (ローカルファイル${locals}曲はファイル名のみ)` : `${tracks.length}曲を保存`, '💾');
+};
 
 window.shufflePlaylist=()=>{
   for(let i=tracks.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [tracks[i],tracks[j]]=[tracks[j],tracks[i]]; }
@@ -578,14 +747,19 @@ async function boot(){
       const bytes=await fetched[i];
       if(bytes instanceof Error) throw bytes;
       const [meta]=await player.detect(bytes);
-      if(meta) loaded.push(entryFrom(meta, {...s, bytes}));
+      if(meta) loaded.push(entryFrom(meta, {...s, bytes, source:'sample'}));
     }catch(e){
       console.warn(s.file, e);
     }
   }
   tracks=[...loaded, ...tracks];
+  // a shared link, player.html?url=…, lists that tune too. Playback waits for a
+  // click, as browsers only start audio on one.
+  const shared=new URLSearchParams(location.search).get('url');
+  const at= shared ? await addFromUrl(shared) : -1;
+  renderPlaylist();
   if(!tracks.length){ setText(els.title, 'サンプル曲を読み込めませんでした'); return; }
-  selectTrack(0,false);
+  selectTrack(Math.max(0, at), false);
 }
 
 const booting=boot();

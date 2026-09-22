@@ -60,7 +60,17 @@ python3 -m http.server 8000 --directory site/dist
 # → http://localhost:8000/site/
 ```
 
+## URL読み込み / 共有リンク / XSPF
+
+- **URLから読み込み** はブラウザから直接 `fetch` します。読めるのは CORS を許可しているサーバーだけです
+  (raw.githubusercontent.com、api.modarchive.org など)。github.com のファイルページと
+  modarchive.org のモジュールページは、読み込める URL に書き換えてから取得します。
+  zxtunes.com や HVSC のサイトは CORS を許可していないので読めません。中継サーバーは使いません。
+- **共有リンク**: `player.html?url=<URL>` を開くと、その曲をプレイリストに加えて選択します
+  (再生はブラウザの制限でクリック待ち)。
+- **XSPF保存** は zxtune-qt と同じ形式 (playlist version 1、文字列はパーセントエンコード、
+  場所は `location?subpath`) で書き出します。ローカルファイルは場所が分からないため、ファイル名だけが入ります。
+
 ## 今後の拡張
 
-- `zxtunes.com` / HVSC の直リンク再生
-- XSPF エクスポート、メディアセッション API
+- XSPF の読み込み、メディアセッション API
