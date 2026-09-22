@@ -187,8 +187,8 @@ img{max-width:100%}
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
 }
 .hero h1 .outline{
-  -webkit-text-stroke:1px rgba(var(--ink),.14);
-  -webkit-text-fill-color:transparent;
+  color:var(--muted);
+  -webkit-text-fill-color:var(--muted);
 }
 .hero-desc{color:var(--muted);font-size:clamp(15px,1.6vw,18px);max-width:560px;line-height:1.7}
 .hero-desc strong{color:var(--text);font-weight:700}
@@ -647,3 +647,6 @@ img{max-width:100%}
 .shots img{width:100%;height:auto;border-radius:10px;border:1px solid var(--border);display:block;background:var(--bg-card)}
 .shots figcaption{font-size:11px;color:var(--muted);margin-top:4px;text-align:center}
 .shots-note{font-size:11px;color:var(--dim)}
+
+/* settings panel notes (player.html) */
+.setting-note{font-size:11px;line-height:1.6;color:var(--dim);margin-top:-2px}

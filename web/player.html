@@ -5,7 +5,7 @@
 <script src="js/theme.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Webプレイヤー — ZXTune / Chiptune Web Player</title>
-<meta name="description" content="ZXTune Webプレイヤー — ブラウザでPT3/SPC/NSF/SID/VGMなど100+フォーマットを直接再生。ドラッグ＆ドロップ対応。">
+<meta name="description" content="ZXTune の Web プレイヤー。PT3 / SPC / NSF / SID / VGM など 285 の曲の形式を、ブラウザでそのまま再生。ドラッグ＆ドロップ、URL、XSPF プレイリストに対応。">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2300FFD1'/><text x='16' y='22' text-anchor='middle' font-family='monospace' font-weight='800' font-size='18' fill='%23071118'>Z</text></svg>">
 <link rel="stylesheet" href="css/style.css">
 <link rel="manifest" href="manifest.json">
@@ -38,7 +38,7 @@
       <span><span id="engineInfo">—</span> • <span id="chipInfo" style="color:var(--text)">—</span></span>
     </div>
     <div style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)">
-      <span class="kbd">Space</span> 再生/停止 <span class="kbd">←/→</span> シーク <span class="kbd">M</span> ミュート
+      <span class="kbd">Space</span> 再生/停止 <span class="kbd">←/→</span> シーク <span class="kbd">M</span> A ch ミュート
     </div>
   </div>
 
@@ -90,7 +90,7 @@
         <div class="drop-zone" id="dropZone2" style="padding:22px">
           <div style="font-size:20px">⬆ ドラッグ＆ドロップで再生</div>
           <div class="drop-hint">ZIP / TRD / SCL の中身も自動展開 • XSPF プレイリストも可 • サーバ送信なし</div>
-          <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><span class="format-tag">.pt3 .stc .ay .ym .vtx .spc .nsf .sid .vgm .gym .s98 .zip .trd +99</span></div>
+          <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><span class="format-tag">.pt3 .stc .ay .ym .vtx .spc .nsf .sid .vgm .gym .s98 .zip .trd …</span></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
           <button class="btn btn-primary" onclick="document.getElementById('fileInput2').click()">ファイルを選択</button>
@@ -117,7 +117,8 @@
       <div style="padding:14px;display:grid;gap:12px;overflow:auto">
         <div class="info-box" style="margin:0"><h4>現在再生中</h4><dl><dt>タイトル</dt><dd id="infoTitle">—</dd><dt>作者</dt><dd id="infoAuthor">—</dd><dt>フォーマット</dt><dd id="infoFormat">—</dd><dt>チップ</dt><dd id="infoChip">—</dd><dt>長さ / ループ</dt><dd id="infoDur">—</dd></dl></div>
         <div class="info-box"><h4>オーディオ設定</h4><div style="display:grid;gap:8px;font-size:12px;color:var(--muted)">
-          <label>補間 <select id="interp" style="width:100%;margin-top:4px;background:rgba(var(--ink),.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option value="default">チップごとの既定</option><option value="hq">高品質 (IIR ローパス)</option><option value="lq">低品質 (2点平均)</option><option value="none">なし</option></select></label>
+          <label>補間 <select id="interp" style="width:100%;margin-top:4px;background:rgba(var(--ink),.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option value="default">チップごとの既定</option><option value="hq">高品質</option><option value="lq">低品質</option><option value="none">なし</option></select></label>
+          <div class="setting-note">AY・SAA: 高品質は2次 IIR ローパス、低品質は2点平均、なしは間引きのみ。SID: 高品質でリサンプリングも行います。</div>
           <label>AYM レイアウト <select id="aymLayout" style="width:100%;margin-top:4px;background:rgba(var(--ink),.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option value="0">ABC (標準)</option><option value="1">ACB</option><option value="2">BAC</option><option value="3">BCA</option><option value="4">CAB</option><option value="5">CBA</option><option value="6">Mono</option></select></label>
           <label title="音量カーブとエンベロープの段数が変わります (AY 16段 / YM 32段)">AY/YM チップ <select id="aymType" style="width:100%;margin-top:4px;background:rgba(var(--ink),.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option value="0">AY-3-8910 (既定)</option><option value="1">YM2149F</option></select></label>
           <label style="display:flex;align-items:center;gap:8px" title="AY / SAA の出力に乗る直流成分をカットします"><input type="checkbox" id="dcFilter" checked> DC除去フィルタ</label>
