@@ -116,8 +116,9 @@
         <div class="info-box"><h4>オーディオ設定</h4><div style="display:grid;gap:8px;font-size:12px;color:var(--muted)">
           <label>補間 <select id="interp" style="width:100%;margin-top:4px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option value="default">チップごとの既定</option><option value="hq">高品質 (IIR ローパス)</option><option value="lq">低品質 (2点平均)</option><option value="none">なし</option></select></label>
           <label>AYM レイアウト <select id="aymLayout" style="width:100%;margin-top:4px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option value="0">ABC (標準)</option><option value="1">ACB</option><option value="2">BAC</option><option value="3">BCA</option><option value="4">CAB</option><option value="5">CBA</option><option value="6">Mono</option></select></label>
-          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked> エンベロープ補正</label>
-          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked> DC除去フィルタ</label>
+          <label title="音量カーブとエンベロープの段数が変わります (AY 16段 / YM 32段)">AY/YM チップ <select id="aymType" style="width:100%;margin-top:4px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option value="0">AY-3-8910 (既定)</option><option value="1">YM2149F</option></select></label>
+          <label style="display:flex;align-items:center;gap:8px" title="AY / SAA の出力に乗る直流成分をカットします"><input type="checkbox" id="dcFilter" checked> DC除去フィルタ</label>
+          <div style="font-size:11px;line-height:1.5;opacity:.8">VTX ファイルはファイル内のチップ種別・レイアウト指定が優先されます。</div>
         </div></div>
         <div class="try-box"><h4>💡 ヒント</h4><p>TRDやZIPをドロップすると、中の全曲がプレイリストに入ります。プレイリストはXSPFで保存できます。</p><button class="btn btn-ghost" style="width:100%;font-size:12px" onclick="toast('ヒント: ファイルを複数選択すると一括追加されます')">使い方をもっと見る</button></div>
         <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">

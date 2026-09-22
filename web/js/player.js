@@ -8,6 +8,10 @@
 const ENGINE_BASE = new URL((document.documentElement.dataset.engine || '..') + '/', document.baseURI).href.replace(/\/$/, '');
 const CHANNELS_MASK = 'zxtune.core.channels_mask';
 const AYM_LAYOUT = 'zxtune.core.aym.layout';   // 0 ABC … 5 CBA, 6 mono
+const AYM_TYPE = 'zxtune.core.aym.type';       // 0 AY-3-8910, 1 YM2149F: volume curve and envelope steps
+// AY and SAA only ever drive the output upwards, so it rides on a DC offset. A
+// one-pole DC blocker, y[n] = x[n] - x[n-1] + R*y[n-1], cuts below this:
+const DC_CUTOFF_HZ = 5;
 // One interpolation choice covers every chip that has the setting. Their
 // defaults differ, hence the explicit 'default' row (see core_parameters.h).
 const INTERPOLATION = {
@@ -35,7 +39,7 @@ let tracks=[];            // {title, author, format, chip, icon, ext, durationMs
 let current=null;         // the entry shown in the player
 let opened=null;          // the entry the engine has open
 let openToken=0;
-let player=null, gain=null, analyser=null;
+let player=null, gain=null, analyser=null, dcBlock=null;
 let playing=false, posMs=0;
 let chanMute=[false,false,false];
 let loopMode=0; //0 none,1 one,2 all
@@ -335,15 +339,18 @@ function bindControls(){
   });
 }
 
-// Audio settings: kept in the browser, pushed to the engine, which applies them
-// to the playing track right away and to every track opened later.
-let settings={interp:'default', layout:0};
+// Audio settings: kept in the browser. The engine ones are pushed to the worker,
+// which applies them to the playing track right away and to every track opened
+// later; the DC filter lives in the page's own audio graph.
+let settings={interp:'default', layout:0, aymType:0, dc:true};
 
 function loadSettings(){
   try{
     const saved=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}');
     if(saved.interp in INTERPOLATION) settings.interp=saved.interp;
     if(Number.isInteger(saved.layout) && saved.layout>=0 && saved.layout<=6) settings.layout=saved.layout;
+    if(saved.aymType===0 || saved.aymType===1) settings.aymType=saved.aymType;
+    if(typeof saved.dc==='boolean') settings.dc=saved.dc;
   }catch{}
 }
 
@@ -357,26 +364,40 @@ function applySettings(){
     player.setIntProperty(`zxtune.core.${chip}.interpolation`, value);
   }
   player.setIntProperty(AYM_LAYOUT, settings.layout);
+  player.setIntProperty(AYM_TYPE, settings.aymType);
+  routeOutput();
+}
+
+// worklet → [DC blocker] → analyser → volume → speakers
+function routeOutput(){
+  if(!player) return;
+  const ctx=player.context;
+  if(!dcBlock){
+    const r=1 - 2*Math.PI*DC_CUTOFF_HZ/ctx.sampleRate;
+    dcBlock=ctx.createIIRFilter([1, -1], [1, -r]);
+    dcBlock.connect(analyser);
+  }
+  player.node.disconnect();
+  player.node.connect(settings.dc ? dcBlock : analyser);
 }
 
 function bindSettings(){
   loadSettings();
-  const interp=document.getElementById('interp');
-  const layout=document.getElementById('aymLayout');
-  if(interp){
-    interp.value=settings.interp;
-    interp.onchange=()=>{
-      settings.interp=interp.value; saveSettings(); applySettings();
-      toast(`補間: ${interp.selectedOptions[0].textContent}`, '🎚️');
+  const bind=(id, key, parse, label)=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    const checkbox=el.type==='checkbox';
+    if(checkbox) el.checked=settings[key]; else el.value=String(settings[key]);
+    el.onchange=()=>{
+      settings[key]= checkbox ? el.checked : parse(el.value);
+      saveSettings(); applySettings();
+      toast(`${label}: ${checkbox ? (el.checked?'ON':'OFF') : el.selectedOptions[0].textContent}`, '🎚️');
     };
-  }
-  if(layout){
-    layout.value=String(settings.layout);
-    layout.onchange=()=>{
-      settings.layout=Number(layout.value); saveSettings(); applySettings();
-      toast(`AYM レイアウト: ${layout.selectedOptions[0].textContent}`, '🎚️');
-    };
-  }
+  };
+  bind('interp', 'interp', String, '補間');
+  bind('aymLayout', 'layout', Number, 'AYM レイアウト');
+  bind('aymType', 'aymType', Number, 'AY/YM チップ');
+  bind('dcFilter', 'dc', null, 'DC除去フィルタ');
 }
 
 // A file may be an archive or a multi-song rip: every module found in it is listed.

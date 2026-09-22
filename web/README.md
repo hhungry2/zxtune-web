@@ -48,7 +48,7 @@ GitHub Pages ではエンジンをルートに、このサイトを `site/` に�
 別の場所に置くときは `<html data-engine="パス">` で指定します。
 
 チャンネルミュートは `zxtune.core.channels_mask`（ビット n = チャンネル n を消音）で、A/B/C の対応は AY 系のものです。
-補間は `zxtune.core.{aym,saa,sid,dac}.interpolation`、AYM レイアウトは `zxtune.core.aym.layout` に渡し、選択はブラウザに保存します。
+補間は `zxtune.core.{aym,saa,sid,dac}.interpolation`、AYM レイアウトは `zxtune.core.aym.layout`、AY/YM チップは `zxtune.core.aym.type` に渡します（VTX ファイルはファイル内の指定が優先）。DC除去フィルタはエンジンではなくページ側の一次 DC ブロッカー（IIRFilterNode、約5Hz）です。選択はブラウザに保存します。
 
 ## 起動
 
