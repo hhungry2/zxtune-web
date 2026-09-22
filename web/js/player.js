@@ -7,6 +7,16 @@
 // this script, while fetch, the worker and the worklet use the page.
 const ENGINE_BASE = new URL((document.documentElement.dataset.engine || '..') + '/', document.baseURI).href.replace(/\/$/, '');
 const CHANNELS_MASK = 'zxtune.core.channels_mask';
+const AYM_LAYOUT = 'zxtune.core.aym.layout';   // 0 ABC … 5 CBA, 6 mono
+// One interpolation choice covers every chip that has the setting. Their
+// defaults differ, hence the explicit 'default' row (see core_parameters.h).
+const INTERPOLATION = {
+  default: {aym:2, saa:1, sid:0, dac:0},
+  hq:      {aym:2, saa:2, sid:2, dac:1},
+  lq:      {aym:1, saa:1, sid:1, dac:1},
+  none:    {aym:0, saa:0, sid:0, dac:0},
+};
+const SETTINGS_KEY = 'zxtune.web.settings';
 
 // The sample set shipped with the engine: one tune per sound chip.
 const SAMPLES = [
@@ -325,6 +335,50 @@ function bindControls(){
   });
 }
 
+// Audio settings: kept in the browser, pushed to the engine, which applies them
+// to the playing track right away and to every track opened later.
+let settings={interp:'default', layout:0};
+
+function loadSettings(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}');
+    if(saved.interp in INTERPOLATION) settings.interp=saved.interp;
+    if(Number.isInteger(saved.layout) && saved.layout>=0 && saved.layout<=6) settings.layout=saved.layout;
+  }catch{}
+}
+
+function saveSettings(){
+  try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }catch{}
+}
+
+function applySettings(){
+  if(!player) return;
+  for(const [chip, value] of Object.entries(INTERPOLATION[settings.interp])){
+    player.setIntProperty(`zxtune.core.${chip}.interpolation`, value);
+  }
+  player.setIntProperty(AYM_LAYOUT, settings.layout);
+}
+
+function bindSettings(){
+  loadSettings();
+  const interp=document.getElementById('interp');
+  const layout=document.getElementById('aymLayout');
+  if(interp){
+    interp.value=settings.interp;
+    interp.onchange=()=>{
+      settings.interp=interp.value; saveSettings(); applySettings();
+      toast(`補間: ${interp.selectedOptions[0].textContent}`, '🎚️');
+    };
+  }
+  if(layout){
+    layout.value=String(settings.layout);
+    layout.onchange=()=>{
+      settings.layout=Number(layout.value); saveSettings(); applySettings();
+      toast(`AYM レイアウト: ${layout.selectedOptions[0].textContent}`, '🎚️');
+    };
+  }
+}
+
 // A file may be an archive or a multi-song rip: every module found in it is listed.
 async function handleFiles(files){
   await booting;
@@ -471,6 +525,7 @@ async function fetchSample(file){
 
 async function boot(){
   bindControls();
+  bindSettings();
   setText(els.title, 'エンジンを読み込み中…');
   try{
     const { ZXTunePlayer } = await import(`${ENGINE_BASE}/player.mjs`);
@@ -490,6 +545,7 @@ async function boot(){
   analyser.connect(gain);
   gain.connect(ctx.destination);
   bindControls.applyVol();
+  applySettings();
   player.onposition=ms=>{ if(opened===current){ posMs=ms; updateProgress(); } };
   player.onended=onEnded;
 

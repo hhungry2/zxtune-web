@@ -114,8 +114,8 @@
       <div style="padding:14px;display:grid;gap:12px;overflow:auto">
         <div class="info-box" style="margin:0"><h4>現在再生中</h4><dl><dt>タイトル</dt><dd id="infoTitle">—</dd><dt>作者</dt><dd id="infoAuthor">—</dd><dt>フォーマット</dt><dd id="infoFormat">—</dd><dt>チップ</dt><dd id="infoChip">—</dd><dt>長さ / ループ</dt><dd id="infoDur">—</dd></dl></div>
         <div class="info-box"><h4>オーディオ設定</h4><div style="display:grid;gap:8px;font-size:12px;color:var(--muted)">
-          <label>補間 <select id="interp" style="width:100%;margin-top:4px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option>Cubic (推奨)</option><option>Linear</option><option>Sinc</option><option>None</option></select></label>
-          <label>AYM レイアウト <select style="width:100%;margin-top:4px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option>ABC (標準)</option><option>ACB</option><option>BAC</option><option>Mono</option></select></label>
+          <label>補間 <select id="interp" style="width:100%;margin-top:4px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option value="default">チップごとの既定</option><option value="hq">高品質 (IIR ローパス)</option><option value="lq">低品質 (2点平均)</option><option value="none">なし</option></select></label>
+          <label>AYM レイアウト <select id="aymLayout" style="width:100%;margin-top:4px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option value="0">ABC (標準)</option><option value="1">ACB</option><option value="2">BAC</option><option value="3">BCA</option><option value="4">CAB</option><option value="5">CBA</option><option value="6">Mono</option></select></label>
           <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked> エンベロープ補正</label>
           <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked> DC除去フィルタ</label>
         </div></div>
