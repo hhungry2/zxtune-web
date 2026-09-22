@@ -5,9 +5,9 @@
 <script src="js/theme.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ZXTune / Chiptune Web Player</title>
-<meta name="description" content="ZXTuneはZX Spectrum / C64 / NES / SNES / Genesisなど100以上のチップチューン形式に対応するオープンソースの究極プレイヤー。Webで即再生、デスクトップ/Androidでも。">
+<meta name="description" content="ZXTune は ZX Spectrum / C64 / ファミコン / スーファミ / メガドライブなど 285 の曲の形式に対応するオープンソースのチップチューン・プレイヤー。ブラウザでそのまま再生でき、デスクトップ版と Android 版もあります。">
 <meta property="og:title" content="ZXTune / Chiptune Web Player">
-<meta property="og:description" content="100+フォーマット、15+サウンドチップ、ブラウザで今すぐ試せるWebプレイヤー。">
+<meta property="og:description" content="285 の曲の形式に対応。インストール不要で、ブラウザで今すぐ試せるチップチューン・プレイヤー。">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2300FFD1'/><text x='16' y='22' text-anchor='middle' font-family='monospace' font-weight='800' font-size='18' fill='%23071118'>Z</text></svg>">
 <link rel="stylesheet" href="css/style.css">
@@ -49,7 +49,7 @@
     <div>
       <div class="eyebrow"><i></i> Open Source since 2008 • LGPL-3.0 • WebAssembly対応</div>
       <h1>
-        <span class="grad">100超の</span><br>
+        <span class="grad"><span data-stat="modules">285</span>形式の</span><br>
         チップチューンを、<br>
         <span class="outline">一つのプレイヤーで。</span>
       </h1>
@@ -127,9 +127,9 @@
         </div>
         <div class="player-controls">
           <div class="progress-wrap">
-            <span class="time mono"><b id="curTime">0:00</b> / <span id="totTime">3:42</span></span>
+            <span class="time mono"><b id="curTime">0:00</b> / <span id="totTime">0:00</span></span>
             <div class="progress" id="progress"><div class="progress-fill" id="progressFill"></div><div class="progress-handle" id="progressHandle"></div></div>
-            <span class="time mono" id="remain">-3:42</span>
+            <span class="time mono" id="remain">-0:00</span>
           </div>
           <div class="transport">
             <div class="transport-left">
@@ -154,8 +154,8 @@
       <div class="player-side">
         <div class="playlist-card">
           <div class="card-head">
-            <h3>プレイリスト — Demo</h3>
-            <span class="count mono" id="plCount">8 tracks</span>
+            <h3>プレイリスト — サンプル曲</h3>
+            <span class="count mono" id="plCount">—</span>
           </div>
           <div class="playlist" id="playlist"></div>
         </div>
@@ -166,7 +166,7 @@
             <div class="drop-hint mono" style="font-size:11px;margin-top:6px">対応: PT3 / STC / ASC / YM / VTX / SPC / NSF / SID / VGM / GYM / ZIP / TRD … 全 <span data-stat="total">382</span> プラグイン</div>
           </div>
           <div class="format-tags">
-            <span class="format-tag">.pt3</span><span class="format-tag">.stc</span><span class="format-tag">.ay</span><span class="format-tag">.spc</span><span class="format-tag">.nsf</span><span class="format-tag">.sid</span><span class="format-tag">.vgm</span><span class="format-tag">.zip</span><span class="format-tag">.trd</span><span class="format-tag">+99</span>
+            <span class="format-tag">.pt3</span><span class="format-tag">.stc</span><span class="format-tag">.ay</span><span class="format-tag">.spc</span><span class="format-tag">.nsf</span><span class="format-tag">.sid</span><span class="format-tag">.vgm</span><span class="format-tag">.zip</span><span class="format-tag">.trd</span><span class="format-tag">…</span>
           </div>
           <div style="display:flex;gap:8px">
             <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="document.getElementById('fileInput').click()">ファイルを選択</button>
@@ -181,7 +181,7 @@
     <div class="how-grid" style="margin-top:20px">
       <div class="how-steps">
         <div class="step"><div class="step-num">1</div><div><h4>ドラッグ＆ドロップで即デコード</h4><p>ブラウザ内でC++コア(WASM)が直接解析。サーバへ送信されません — プライベート＆高速。</p></div></div>
-        <div class="step"><div class="step-num">2</div><div><h4>高精度エミュレーション合成</h4><p>AY-3-8910 / SID / SPC700 / 2A03 / YM2612 などの音源チップをエミュレート。補間・DC除去・AY/YM 切替も選べます。</p></div></div>
+        <div class="step"><div class="step-num">2</div><div><h4>音源チップのエミュレーション</h4><p>AY-3-8910 / SID / SPC700 / 2A03 / YM2612 などの音源チップをエミュレート。補間・DC除去・AY/YM 切替も選べます。</p></div></div>
         <div class="step"><div class="step-num">3</div><div><h4>ビジュアライズ & コントロール</h4><p>スペクトラム / 波形、チャンネルミュート、ループ / シャッフル。キーボードとメディアキーでも操作できます。</p></div></div>
       </div>
       <div class="code-card">
@@ -262,9 +262,9 @@
     </div>
 
     <div class="features-grid" style="margin-top:20px">
-      <div class="feature"><div class="feature-icon">🎚️</div><h3>スタジオ品質の再生</h3><p>補間 (なし / 低品質 / 高品質)、ゲイン、フェードイン / アウト、無音検出。</p><ul><li>チャンネル別ミュート</li><li>A/B/C レイアウト & ミキサー</li><li>AY/YM チップ切替・クロック設定</li></ul></div>
+      <div class="feature"><div class="feature-icon">🎚️</div><h3>再生の設定</h3><p>補間 (なし / 低品質 / 高品質) は Web 版と Qt 版で、プリアンプ・フェードイン / アウト・無音検出・ループ回数は Qt 版で設定できます。</p><ul><li>チャンネル別ミュート</li><li>A/B/C レイアウト & ミキサー</li><li>AY/YM チップ切替・クロック設定</li></ul></div>
       <div class="feature"><div class="feature-icon">🔍</div><h3>強力なブラウズ</h3><p>アーカイブのネスト展開、プレイリストの検索・プロパティ編集・重複の削除 (Qt 版)。</p><ul><li>ZIP/RAR/7z/TRD/SCL/FDI 内を透過再生</li><li>XSPF / AYL プレイリスト</li><li>オンラインカタログ14件 (Android 版)</li></ul></div>
-      <div class="feature"><div class="feature-icon">🧬</div><h3>オープン & 拡張可能</h3><p>コアは C++、UI は各プラットフォーム向け。形式ごとのデコーダはコアに組み込まれています。</p><ul><li>LGPL-3.0 • GitHub / Bitbucket</li><li>WASM / Qt / Android / CLI</li><li>お知らせは Telegram / X / VK で</li></ul></div>
+      <div class="feature"><div class="feature-icon">🧬</div><h3>オープンソース</h3><p>コアは C++、UI は各プラットフォーム向け。形式ごとのデコーダはコアに組み込まれています。</p><ul><li>LGPL-3.0 • GitHub / Bitbucket</li><li>WASM / Qt / Android / CLI</li><li>お知らせは Telegram / X / VK で</li></ul></div>
     </div>
   </div>
 </section>
@@ -314,7 +314,7 @@
         </div>
       </div>
       <div class="footer-links"><h4>プロダクト</h4><a href="player.html">Webプレイヤー</a><a href="players.html">デスクトップ (Qt)</a><a href="https://play.google.com/store/apps/details?id=app.zxtune" target="_blank">Android</a><a href="https://github.com/vitamin-caig/zxtune" target="_blank">zxtune123 (CLI)</a></div>
-      <div class="footer-links"><h4>フォーマット</h4><a href="formats.html#aym">AY/YM (ZX)</a><a href="formats.html#console">コンソール (SPC/NSF/SID)</a><a href="formats.html#fm">FM (TurboFM)</a><a href="formats.html#archived">アーカイブ / ディスク</a></div>
+      <div class="footer-links"><h4>フォーマット</h4><a href="formats.html#aym">AY/YM (ZX)</a><a href="formats.html#console">コンソール (SPC/NSF/SID)</a><a href="formats.html#fm">FM / SAA</a><a href="formats.html#archived">アーカイブ / ディスク</a></div>
       <div class="footer-links"><h4>コミュニティ</h4><a href="https://zxtunes.com" target="_blank">zxtunes.com</a><a href="https://www.hvsc.c64.org" target="_blank">HVSC</a><a href="https://modarchive.org" target="_blank">ModArchive</a><a href="https://vgmrips.net" target="_blank">VGMRips</a></div>
     </div>
     <div class="footer-bottom">
@@ -324,7 +324,7 @@
   </div>
 </footer>
 
-<div class="toast" id="toast"><span id="toastIcon">✨</span><span id="toastMsg">Copied</span></div>
+<div class="toast" id="toast"><span id="toastIcon">✨</span><span id="toastMsg"></span></div>
 
 <script src="js/formats-data.js"></script>
 <script src="js/plugins-data.js"></script>
