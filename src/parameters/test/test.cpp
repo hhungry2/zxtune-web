@@ -317,7 +317,23 @@ namespace
       TestFind(*cont, "bin", noInt);
       TestFind(*cont, "bin", noData);
     }
-    Test("final version", cont->Version(), 14u);
+
+    std::cout << "addings of default values" << std::endl;
+    const Parameters::IntType int0 = 0;
+    const Parameters::StringType str0;
+    cont->SetValue("zero", int0);
+    cont->SetValue("empty", str0);
+    Test("version", cont->Version(), 16u);
+    {
+      TestFind(*cont, "zero", &int0);
+      TestFind(*cont, "empty", &str0);
+    }
+    cont->SetValue("zero", int0);
+    cont->SetValue("empty", str0);
+    Test("version", cont->Version(), 16u);
+    cont->RemoveValue("zero");
+    cont->RemoveValue("empty");
+    Test("final version", cont->Version(), 18u);
   }
 }  // namespace
 

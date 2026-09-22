@@ -153,8 +153,10 @@ namespace Parameters
         {
           return Update(lower->second, value);
         }
+        // a new name is a change even when its value equals T{}- a zero used to slip past version tracking
         const auto it = Storage.emplace_hint(lower, name, T{});
-        return Update(it->second, value);
+        Update(it->second, value);
+        return true;
       }
 
     private:
