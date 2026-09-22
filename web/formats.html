@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>フォーマット図鑑 — ZXTune 107フォーマット解説</title>
+<meta name="description" content="ZXTuneが対応する107のチップチューン・フォーマットをカテゴリ別に解説。PT3, SPC, NSF, SID, VGM, TRD, ZIPなど。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2300FFD1'/><text x='16' y='22' text-anchor='middle' font-family='monospace' font-weight='800' font-size='18' fill='%23071118'>Z</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="bg-grid"></div><div class="bg-glow"></div><div class="bg-noise"></div>
+<header class="header">
+  <div class="container header-inner">
+    <a class="brand" href="index.html"><div class="brand-mark"><span>Z</span></div><div><div class="brand-text"><b>ZX</b>Tune</div><div class="brand-sub">Format Atlas</div></div></a>
+    <nav class="nav"><a href="index.html">ホーム</a><a href="player.html">Webプレイヤー</a><a class="active" href="formats.html">フォーマット</a><a href="players.html">プレイヤー</a></nav>
+    <div class="header-actions"><a class="btn btn-primary" href="player.html" style="padding:8px 14px">▶ 試す</a></div>
+  </div>
+</header>
+
+<div class="container" style="padding:28px 0 10px">
+  <div class="kicker">Format Atlas — 107 formats, one core</div>
+  <h1 style="margin:10px 0 8px;font-size:clamp(28px,4vw,44px);letter-spacing:-.03em;line-height:.95">フォーマット<span style="background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent">図鑑</span></h1>
+  <p style="color:var(--muted);max-width:780px;margin:0;font-size:15px;line-height:1.7">ZXTuneはZX Spectrum黄金期のPT3/STCから、コンソールのSPC/NSF/SID、メガドライブVGM、ディスクイメージTRD、そしてZIP/RARまで — <b style="color:var(--text)">107種のフォーマットを透過的に再生</b>します。カテゴリで絞り込み、各フォーマットの背景・チップ・拡張子を詳しく解説します。</p>
+</div>
+
+<div class="container">
+  <div class="filter-bar" style="margin-top:18px">
+    <input id="q" placeholder="検索 — 例: pt3 / sid / AY / 2004 / ZX…">
+    <button class="chip active" data-cat="all">すべて</button>
+    <button class="chip" data-cat="aym">AY/YM</button>
+    <button class="chip" data-cat="digital">デジタル</button>
+    <button class="chip" data-cat="fm">FM</button>
+    <button class="chip" data-cat="console">コンソール</button>
+    <button class="chip" data-cat="packed">パック</button>
+    <button class="chip" data-cat="archived">アーカイブ</button>
+    <button class="chip" data-cat="audio">ストリーム</button>
+    <span class="mono" id="count" style="margin-left:auto;color:var(--muted);font-size:12px">—</span>
+  </div>
+
+  <div id="cats" class="formats-cats" style="margin-bottom:18px"></div>
+  <div id="grid" class="formats-grid"></div>
+
+  <div style="margin:28px 0 10px;padding:16px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+    <div style="width:48px;height:48px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg, var(--cyan), var(--violet));color:#061018;font-weight:800">?</div>
+    <div style="flex:1;min-width:260px"><b>フォーマットを追加したい？</b><p style="margin:4px 0 0;color:var(--muted);font-size:13px">ZXTuneはプラグインアーキテクチャ。デコーダを追加すれば新フォーマットもすぐ再生可能。GitHubでPRを歓迎します。</p></div>
+    <a class="btn btn-ghost" href="https://github.com/vitamin-caig/zxtune" target="_blank">コントリビュート →</a>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-bottom"><span>© 2009–2026 ZXTune • Format Atlas</span><span class="mono">107 formats • <a href="index.html" style="color:var(--cyan)">← ホームへ戻る</a></span></div>
+  </div>
+</footer>
+
+<div class="toast" id="toast"><span id="toastIcon">✨</span><span id="toastMsg">msg</span></div>
+<script src="js/formats-data.js"></script>
+<script src="js/app.js"></script>
+<script src="js/formats.js"></script>
+</body>
+</html>

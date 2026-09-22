@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Webプレイヤー — ZXTune</title>
+<meta name="description" content="ZXTune Webプレイヤー — ブラウザでPT3/SPC/NSF/SID/VGMなど100+フォーマットを直接再生。ドラッグ＆ドロップ対応。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2300FFD1'/><text x='16' y='22' text-anchor='middle' font-family='monospace' font-weight='800' font-size='18' fill='%23071118'>Z</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+<style>
+.player-page{display:grid;grid-template-columns:320px 1fr 320px;gap:16px;padding:18px 0 28px}
+@media(max-width:1100px){.player-page{grid-template-columns:280px 1fr}}
+@media(max-width:760px){.player-page{grid-template-columns:1fr}}
+.side-panel{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 120px);position:sticky;top:78px}
+.side-panel .head{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.side-panel .head h3{margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.center-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.kbd{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(255,255,255,.08);border:1px solid var(--border);border-bottom-width:2px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div><div class="bg-glow"></div><div class="bg-noise"></div>
+<header class="header">
+  <div class="container header-inner">
+    <a class="brand" href="index.html"><div class="brand-mark"><span>Z</span></div><div><div class="brand-text"><b>ZX</b>Tune</div><div class="brand-sub">Web Player</div></div></a>
+    <nav class="nav"><a href="index.html">ホーム</a><a class="active" href="player.html">Webプレイヤー</a><a href="formats.html">フォーマット</a><a href="players.html">プレイヤー</a></nav>
+    <div class="header-actions"><a class="btn btn-ghost" href="formats.html" style="padding:8px 14px;font-size:13px">フォーマット</a><button class="btn btn-primary" style="padding:8px 14px" onclick="document.getElementById('fileInput2').click()">＋ ファイルを開く</button></div>
+  </div>
+</header>
+
+<div class="container">
+  <div style="padding:12px 0 0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:12px">
+      <span class="mono" style="padding:5px 9px;border-radius:999px;background:rgba(0,255,209,.1);border:1px solid rgba(0,255,209,.2);color:var(--cyan)">● LIVE WASM</span>
+      <span>48kHz • Cubic • Stereo • <span id="chipInfo" style="color:var(--text)">AY-3-8910</span></span>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)">
+      <span class="kbd">Space</span> 再生/停止 <span class="kbd">←/→</span> シーク <span class="kbd">M</span> ミュート
+    </div>
+  </div>
+
+  <div class="player-page">
+    <!-- left: playlist -->
+    <div class="side-panel">
+      <div class="head"><h3>プレイリスト</h3><span class="mono" id="plCount2" style="font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--border)">8 tracks</span></div>
+      <div style="padding:10px;display:flex;gap:6px">
+        <input id="search" placeholder="検索 — pt3, sid, author…" style="flex:1;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:999px;padding:8px 12px;color:var(--text);font-size:12px;outline:none">
+        <button class="icon-btn small" title="シャッフル" onclick="shufflePlaylist()">⇄</button>
+      </div>
+      <div class="playlist" id="playlist2" style="flex:1;overflow:auto"></div>
+      <div style="padding:10px;border-top:1px solid var(--border);display:flex;gap:6px">
+        <button class="btn btn-ghost" style="flex:1;font-size:12px;padding:8px" onclick="clearPlaylist()">クリア</button>
+        <button class="btn btn-ghost" style="flex:1;font-size:12px;padding:8px" onclick="toast('XSPF エクスポート対応予定')">XSPF保存</button>
+      </div>
+    </div>
+
+    <!-- center: player -->
+    <div class="center-col">
+      <div class="player-main" id="mainPlayer2">
+        <div class="player-top">
+          <div class="player-art" style="width:96px;height:96px"><span id="pArt2" style="font-size:44px">🎹</span></div>
+          <div class="player-info">
+            <div class="player-title" id="pTitle2" style="font-size:20px">Choose a track</div>
+            <div class="player-artist" id="pArtist2">ZXTune Web • Ready</div>
+            <div class="player-meta"><span id="pFormat2">—</span><span id="pChip2" class="player-badge">READY</span><span id="pInfo2" class="mono" style="font-size:11px">drop file here or press Play</span></div>
+          </div>
+        </div>
+        <div class="player-vis" style="height:200px">
+          <canvas id="visCanvas2" width="900" height="200"></canvas>
+          <div class="player-vis-overlay"><span class="mono" id="visLeft2">AY-3-8910 • 1.77MHz • CH A/B/C</span><span class="mono">◉ 48kHz • STEREO</span></div>
+        </div>
+        <div class="player-controls">
+          <div class="progress-wrap"><span class="time mono"><b id="curTime2">0:00</b> / <span id="totTime2">0:00</span></span><div class="progress" id="progress2"><div class="progress-fill" id="progressFill2"></div><div class="progress-handle" id="progressHandle2"></div></div><span class="time mono" id="remain2">-0:00</span></div>
+          <div class="transport">
+            <div class="transport-left"><button class="icon-btn small" id="btnShuffle2">⇄</button><button class="icon-btn" id="btnPrev2">⏮</button><button class="icon-btn primary" id="btnPlay2">▶</button><button class="icon-btn" id="btnNext2">⏭</button><button class="icon-btn small" id="btnLoop2">↻</button></div>
+            <div class="transport-right"><div class="volume"><button class="icon-btn small" id="btnMute2">🔊</button><input type="range" id="vol2" min="0" max="100" value="84"></div></div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="icon-btn small" title="A ch mute" onclick="toggleChan(0)" id="chA" style="width:auto;padding:0 10px;border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:11px">A ●</button>
+            <button class="icon-btn small" title="B ch mute" onclick="toggleChan(1)" id="chB" style="width:auto;padding:0 10px;border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:11px">B ●</button>
+            <button class="icon-btn small" title="C ch mute" onclick="toggleChan(2)" id="chC" style="width:auto;padding:0 10px;border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:11px">C ●</button>
+            <span style="flex:1"></span>
+            <span class="mono" style="font-size:11px;color:var(--muted);align-self:center">Speed <input type="range" id="speed" min="50" max="150" value="100" style="width:80px;vertical-align:middle"> <b id="speedVal" style="color:var(--text)">100%</b></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="drop-card" style="padding:14px">
+        <div class="drop-zone" id="dropZone2" style="padding:22px">
+          <div style="font-size:20px">⬆ ドラッグ＆ドロップで再生</div>
+          <div class="drop-hint">ZIP / TRD / SCL の中身も自動展開 • 最大20MB • サーバ送信なし</div>
+          <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><span class="format-tag">.pt3 .stc .ay .ym .vtx .spc .nsf .sid .vgm .gym .s98 .zip .trd +99</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+          <button class="btn btn-primary" onclick="document.getElementById('fileInput2').click()">ファイルを選択</button>
+          <button class="btn btn-ghost" onclick="toast('URL読み込み: zxtunes.com / HVSC の直リンクに対応予定')">URLから読み込み</button>
+        </div>
+        <input type="file" id="fileInput2" hidden multiple>
+      </div>
+
+      <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;padding:14px">
+        <h3 style="margin:0;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace">プレイヤーの説明 — 仕組みとTips</h3>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px">
+          <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:12px"><b style="font-size:13px">🎹 正確なチップエミュレーション</b><p style="margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.6">AY-3-8910 / YM2149 / SID / SPC700 / 2A03 / YM2612 などをサイクル精度で再現。オリジナルのプレイヤコード(AY)もWASM上のZ80エミュレータで実行。</p></div>
+          <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:12px"><b style="font-size:13px">⚡ WebAssembly + Worklet</b><p style="margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.6">C++コアをEmscriptenでWASM化。AudioWorkletで途切れない48kHz合成。メインスレッドをブロックしません。</p></div>
+          <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:12px"><b style="font-size:13px">📦 アーカイブ透過再生</b><p style="margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.6">ZIP/RAR/7z/LHA/TRD/SCL/FDIをブラウザ内で展開。中に100曲入っていてもプレイリストに一括追加。</p></div>
+          <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:12px"><b style="font-size:13px">🎚️ プロ向けコントロール</b><p style="margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.6">チャンネルミュート/ソロ、補間切替、AYMパンニング、速度、ループ/フェード、イコライザ。</p></div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><span class="kbd">M</span><span style="font-size:12px;color:var(--muted)">ミュート</span><span class="kbd">S</span><span style="font-size:12px;color:var(--muted)">スペクトラム切替</span><span class="kbd">L</span><span style="font-size:12px;color:var(--muted)">ループ</span><span class="kbd">Space</span><span style="font-size:12px;color:var(--muted)">再生/停止</span></div>
+      </div>
+    </div>
+
+    <!-- right: info & queue -->
+    <div class="side-panel" style="max-height:calc(100vh - 120px)">
+      <div class="head"><h3>トラック情報</h3><span class="badge-new">WASM</span></div>
+      <div style="padding:14px;display:grid;gap:12px;overflow:auto">
+        <div class="info-box" style="margin:0"><h4>現在再生中</h4><dl><dt>タイトル</dt><dd id="infoTitle">—</dd><dt>作者</dt><dd id="infoAuthor">—</dd><dt>フォーマット</dt><dd id="infoFormat">—</dd><dt>チップ</dt><dd id="infoChip">—</dd><dt>長さ / ループ</dt><dd id="infoDur">—</dd></dl></div>
+        <div class="info-box"><h4>オーディオ設定</h4><div style="display:grid;gap:8px;font-size:12px;color:var(--muted)">
+          <label>補間 <select id="interp" style="width:100%;margin-top:4px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option>Cubic (推奨)</option><option>Linear</option><option>Sinc</option><option>None</option></select></label>
+          <label>AYM レイアウト <select style="width:100%;margin-top:4px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option>ABC (標準)</option><option>ACB</option><option>BAC</option><option>Mono</option></select></label>
+          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked> エンベロープ補正</label>
+          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked> DC除去フィルタ</label>
+        </div></div>
+        <div class="try-box"><h4>💡 ヒント</h4><p>TRDやZIPをドロップすると、中の全曲がプレイリストに入ります。プレイリストはXSPFで保存できます。</p><button class="btn btn-ghost" style="width:100%;font-size:12px" onclick="toast('ヒント: ファイルを複数選択すると一括追加されます')">使い方をもっと見る</button></div>
+        <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">
+          <div>CORE: zxtune v5100 (WASM)</div><div>SAMPLERATE: 48000Hz</div><div>BUILD: emscripten 3.1.50</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="toastIcon">✨</span><span id="toastMsg">msg</span></div>
+<script src="js/formats-data.js"></script>
+<script src="js/app.js"></script>
+<script src="js/player.js"></script>
+<script>
+  // bind second player elements
+  window.PLAYER2=true;
+</script>
+</body>
+</html>

@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZXTune — 究極のチップチューン・プレイヤー | 100+フォーマット対応</title>
+<meta name="description" content="ZXTuneはZX Spectrum / C64 / NES / SNES / Genesisなど100以上のチップチューン形式に対応するオープンソースの究極プレイヤー。Webで即再生、デスクトップ/Androidでも。">
+<meta property="og:title" content="ZXTune — 究極のチップチューン・プレイヤー">
+<meta property="og:description" content="100+フォーマット、15+サウンドチップ、ブラウザで今すぐ試せるWebプレイヤー。">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2300FFD1'/><text x='16' y='22' text-anchor='middle' font-family='monospace' font-weight='800' font-size='18' fill='%23071118'>Z</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="bg-noise"></div>
+
+<header class="header">
+  <div class="container header-inner">
+    <a class="brand" href="index.html">
+      <div class="brand-mark"><span>Z</span></div>
+      <div>
+        <div class="brand-text"><b>ZX</b>Tune</div>
+        <div class="brand-sub">Chiptune Universe</div>
+      </div>
+    </a>
+    <nav class="nav">
+      <a class="active" href="index.html">ホーム</a>
+      <a href="player.html">Webプレイヤー</a>
+      <a href="formats.html">フォーマット</a>
+      <a href="players.html">プレイヤー</a>
+      <a href="https://github.com/vitamin-caig/zxtune" target="_blank" rel="noopener">GitHub ↗</a>
+    </nav>
+    <div class="header-actions">
+      <a class="btn btn-ghost" href="formats.html" style="padding:8px 14px;font-size:13px">フォーマット一覧</a>
+      <a class="btn btn-primary" href="player.html" style="padding:9px 16px">▶ Webで試す</a>
+      <button class="mobile-toggle" aria-label="menu" onclick="document.querySelector('.nav').classList.toggle('open')">☰</button>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <div class="eyebrow"><i></i> Open Source since 2009 • v5100+ • WebAssembly対応</div>
+      <h1>
+        <span class="grad">100超の</span><br>
+        チップチューンを、<br>
+        <span class="outline">一つのプレイヤーで。</span>
+      </h1>
+      <p class="hero-desc">
+        <strong>ZXTune</strong> は ZX Spectrum から C64、ファミコン、スーファミ、メガドライブ、PS1まで —
+        <strong>100以上のフォーマット / 15基のサウンドチップ</strong>を正確に再現する究極のチップチューン・プレイヤー。<br>
+        インストール不要、<b>ブラウザで今すぐ再生</b>できます。
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="player.html">▶ ブラウザで再生 — 無料</a>
+        <a class="btn btn-ghost" href="players.html">▢ アプリをダウンロード</a>
+        <a class="btn btn-ghost" href="formats.html">フォーマットを見る</a>
+      </div>
+      <div class="hero-meta">
+        <span>◼ <b>107</b> フォーマット</span>
+        <span>◼ <b>15+</b> チップ (AY/SID/SPC/2A03/YM2612...)</span>
+        <span>◼ <b>4</b> プラットフォーム</span>
+        <span>◼ MIT / GPL</span>
+      </div>
+      <div class="stats-bar">
+        <div class="stat"><div class="stat-icon">🎵</div><div><b>50k+</b><br><span>対応曲 (HVSC等)</span></div></div>
+        <div class="stat"><div class="stat-icon">⚡</div><div><b>0.1s</b><br><span>起動 / シーク</span></div></div>
+        <div class="stat"><div class="stat-icon">🧩</div><div><b>ZIP/TRD内</b><br><span>自動展開再生</span></div></div>
+        <div class="stat"><div class="stat-icon">🌐</div><div><b>Online</b><br><span>カタログ統合</span></div></div>
+      </div>
+    </div>
+
+    <div class="hero-visual scanline" id="heroVisual">
+      <canvas class="hero-canvas" id="heroCanvas" width="560" height="420" aria-hidden="true"></canvas>
+      <div class="hero-card">
+        <div class="hero-card-art">👾</div>
+        <div class="hero-card-meta">
+          <div class="t">Space Debris — J. Komputerman</div>
+          <div class="a">PT3 • TurboSound • 3:42 • 6ch</div>
+        </div>
+        <div class="hero-card-bars"><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WEB PLAYER -->
+<section class="section" id="webplayer">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="kicker">Web Player — インストール不要</div>
+        <h2>ブラウザが<br><i>チップチューン・デッキ</i>になる。</h2>
+        <p>WebAssemblyでビルドされたZXTuneコアが、あなたのブラウザで直接デコード＆合成。ドラッグ＆ドロップで即再生、スペクトラム&オシロスコープ表示、ループ制御も完備。</p>
+      </div>
+      <a class="btn btn-primary" href="player.html">フルプレイヤーを開く ↗</a>
+    </div>
+
+    <div class="player-wrap">
+      <!-- main player -->
+      <div class="player-main" id="mainPlayer">
+        <div class="player-top">
+          <div class="player-art"><span id="pArt">🎹</span></div>
+          <div class="player-info">
+            <div class="player-title" id="pTitle">Select a track — トラックを選んでください</div>
+            <div class="player-artist" id="pArtist">ZXTune Web • WebAssembly • 48kHz</div>
+            <div class="player-meta">
+              <span id="pFormat">—</span>
+              <span id="pChip" class="player-badge">READY</span>
+              <span id="pInfo">drop a file or press Play</span>
+            </div>
+          </div>
+        </div>
+        <div class="player-vis">
+          <canvas id="visCanvas" width="720" height="140"></canvas>
+          <div class="player-vis-overlay">
+            <span id="visLeft" class="mono">AY-3-8910 • 1.77MHz • CH A/B/C</span>
+            <span id="visRight" class="mono">◉ LIVE SYNTH</span>
+          </div>
+        </div>
+        <div class="player-controls">
+          <div class="progress-wrap">
+            <span class="time mono"><b id="curTime">0:00</b> / <span id="totTime">3:42</span></span>
+            <div class="progress" id="progress"><div class="progress-fill" id="progressFill"></div><div class="progress-handle" id="progressHandle"></div></div>
+            <span class="time mono" id="remain">-3:42</span>
+          </div>
+          <div class="transport">
+            <div class="transport-left">
+              <button class="icon-btn small" id="btnShuffle" title="シャッフル">⇄</button>
+              <button class="icon-btn" id="btnPrev" title="前へ">⏮</button>
+              <button class="icon-btn primary" id="btnPlay" title="再生/停止">▶</button>
+              <button class="icon-btn" id="btnNext" title="次へ">⏭</button>
+              <button class="icon-btn small" id="btnLoop" title="ループ">↻</button>
+            </div>
+            <div class="transport-right">
+              <div class="volume">
+                <button class="icon-btn small" id="btnMute">🔊</button>
+                <input type="range" id="vol" min="0" max="100" value="84">
+              </div>
+              <button class="icon-btn small" id="btnFullscreen" title="フルスクリーン">⛶</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- side -->
+      <div class="player-side">
+        <div class="playlist-card">
+          <div class="card-head">
+            <h3>プレイリスト — Demo</h3>
+            <span class="count mono" id="plCount">8 tracks</span>
+          </div>
+          <div class="playlist" id="playlist"></div>
+        </div>
+        <div class="drop-card">
+          <div class="drop-zone" id="dropZone">
+            <div style="font-size:22px">⬆ ファイルをドロップ</div>
+            <div class="drop-hint">またはクリックして選択 — <b>20MBまで</b></div>
+            <div class="drop-hint mono" style="font-size:11px;margin-top:6px">対応: PT3 / STC / ASC / YM / VTX / SPC / NSF / SID / VGM / GYM / ZIP / TRD ... 107種</div>
+          </div>
+          <div class="format-tags">
+            <span class="format-tag">.pt3</span><span class="format-tag">.stc</span><span class="format-tag">.ay</span><span class="format-tag">.spc</span><span class="format-tag">.nsf</span><span class="format-tag">.sid</span><span class="format-tag">.vgm</span><span class="format-tag">.zip</span><span class="format-tag">.trd</span><span class="format-tag">+99</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="document.getElementById('fileInput').click()">ファイルを選択</button>
+            <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="toast('デモ: zxtunes.com / HVSC / modarchive.org からURLで読み込み対応予定')">URLから読み込み</button>
+          </div>
+          <input type="file" id="fileInput" hidden multiple>
+        </div>
+      </div>
+    </div>
+
+    <!-- how it works -->
+    <div class="how-grid" style="margin-top:20px">
+      <div class="how-steps">
+        <div class="step"><div class="step-num">1</div><div><h4>ドラッグ＆ドロップで即デコード</h4><p>ブラウザ内でC++コア(WASM)が直接解析。サーバへ送信されません — プライベート＆高速。</p></div></div>
+        <div class="step"><div class="step-num">2</div><div><h4>高精度エミュレーション合成</h4><p>AY-3-8910 / SID / SPC700 / 2A03 / YM2612 等をサイクル精度でエミュレート。補間・フィルタも選択可。</p></div></div>
+        <div class="step"><div class="step-num">3</div><div><h4>ビジュアライズ & コントロール</h4><p>スペクトラム、オシロ、チャンネルミュート、ループ/フェード、速度調整。キーボードショートカットも。</p></div></div>
+      </div>
+      <div class="code-card">
+        <div class="code-head"><span>WebAssembly • No install</span><span class="code-dots"><i></i><i></i><i></i></span></div>
+        <div class="code-body">
+s$ npx zxtune-web — play ~/music/demo.pt3 $<br>
+<b>></b> decoding <em>PT3 (VortexTracker II)</em> … ok<br>
+<b>></b> chip: <b>AY-3-8910</b> @1.773MHz • 3ch + envelope<br>
+<b>></b> duration: <b>3:42</b> • loop: 2 • frames: 6634<br>
+<b>></b> rendering @48kHz • cubic interpolation • stereo<br>
+<b>></b> ▶ now playing — <em>Space Debris</em><br>
+<span style="color:var(--muted)">hint: press <code>M</code> to mute channels, <code>L</code> to loop, <code>S</code> for spectrum</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PLAYERS -->
+<section class="section" id="players">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="kicker">Players — あなたに合った再生環境</div>
+        <h2>どこでも、<i>同じサウンド</i>。</h2>
+        <p>コアは共通、UIは最適化。デスクトップの重厚プレイヤーから、スマホ、そしてブラウザまで — ライブラリと設定はクラウド同期も可能。</p>
+      </div>
+      <a class="btn btn-ghost" href="players.html">詳細ガイド →</a>
+    </div>
+    <div class="players-grid">
+      <div class="player-card">
+        <div class="player-card-top web"><div class="player-card-icon">🌐</div></div>
+        <div class="player-card-body">
+          <h3>ZXTune Web <span>NEW</span></h3>
+          <p>インストール不要。URL共有で即再生。PWAでオフラインも。</p>
+          <ul class="player-card-list">
+            <li>WebAssembly / 48kHz 合成</li>
+            <li>ドラッグ&ドロップ / ZIP内再生</li>
+            <li>スペクトラム & チャンネルミュート</li>
+          </ul>
+        </div>
+        <div class="player-card-foot"><a class="primary" href="player.html">今すぐ試す</a><a href="player.html">詳しく</a></div>
+      </div>
+      <div class="player-card">
+        <div class="player-card-top qt"><div class="player-card-icon">🖥️</div></div>
+        <div class="player-card-body">
+          <h3>ZXTune QT <span>DESKTOP</span></h3>
+          <p>Windows / Linux / macOS。最も高機能なデスクトップ版。</p>
+          <ul class="player-card-list">
+            <li>プレイリスト / 検索 / 変換</li>
+            <li>AYM / DAC / FM 設定</li>
+            <li>コンポーネント / プラグイン</li>
+          </ul>
+        </div>
+        <div class="player-card-foot"><a class="primary" href="https://zxtune.ru" target="_blank">ダウンロード</a><a href="players.html">詳しく</a></div>
+      </div>
+      <div class="player-card">
+        <div class="player-card-top android"><div class="player-card-icon">📱</div></div>
+        <div class="player-card-body">
+          <h3>ZXTune Android <span>MOBILE</span></h3>
+          <p>5万DL超。ローカル + オンラインカタログ + ラジオ。</p>
+          <ul class="player-card-list">
+            <li>zxtunes.com / modarchive / HVSC 統合</li>
+            <li>ウィジェット / 着信音設定</li>
+            <li>ヘッドセット / 通話時ポーズ</li>
+          </ul>
+        </div>
+        <div class="player-card-foot"><a class="primary" href="https://play.google.com/store/apps/details?id=app.zxtune" target="_blank">Google Play</a><a href="https://apt.izzysoft.de/packages/app.zxtune.fdroid" target="_blank">F-Droid</a></div>
+      </div>
+      <div class="player-card">
+        <div class="player-card-top cli"><div class="player-card-icon">⌘</div></div>
+        <div class="player-card-body">
+          <h3>zxtune123 <span>CLI</span></h3>
+          <p>端末で完結。スクリプトや変換バッチに最適。</p>
+          <ul class="player-card-list">
+            <li>軽量 / ヘッドレス</li>
+            <li>WAV/MP3 変換 (ffmpeg連携)</li>
+            <li>情報表示 / ベンチマーク</li>
+          </ul>
+        </div>
+        <div class="player-card-foot"><a class="primary" href="https://github.com/vitamin-caig/zxtune" target="_blank">GitHub</a><a href="players.html">詳しく</a></div>
+      </div>
+    </div>
+
+    <div class="features-grid" style="margin-top:20px">
+      <div class="feature"><div class="feature-icon">🎚️</div><h3>スタジオ品質の再生</h3><p>48kHz / 32bit float、補間(linear/cubic/sinc)、ローパス、ゲイン、フェード、サイレンス検出。</p><ul><li>チャンネル別ミュート / ソロ</li><li>A/B/C パンニング & ステレオセパレーション</li><li>AYM チューニング (ABC/ACB/BAC…)</li></ul></div>
+      <div class="feature"><div class="feature-icon">🔍</div><h3>強力なブラウズ</h3><p>アーカイブのネスト展開、プレイリスト検索、タグ編集、重複検出。</p><ul><li>ZIP/RAR/7z/TRD/SCL/FDI 内を透過再生</li><li>XSPF / AYL プレイリスト</li><li>オンラインカタログ統合 (zxtunes等)</li></ul></div>
+      <div class="feature"><div class="feature-icon">🧬</div><h3>オープン & 拡張可能</h3><p>コアはC++、UIは各プラットフォーム最適。プラグインで新フォーマット追加も容易。</p><ul><li>MIT/GPL • GitHub / Bitbucket</li><li>WASM / Qt / Android / CLI</li><li>活発なコミュニティ & ドキュメント</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- FORMATS PREVIEW -->
+<section class="section" id="formats">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="kicker">Formats — 107フォーマットを網羅</div>
+        <h2>どの時代の音も、<i>逃さない</i>。</h2>
+        <p>ZX SpectrumのPT3/STCから、ファミコンNSF、SFC SPC、C64 SID、メガドライブVGMまで。カテゴリ別に整理されたフォーマット図鑑。</p>
+      </div>
+      <a class="btn btn-ghost" href="formats.html">全フォーマットを見る →</a>
+    </div>
+    <div class="formats-cats" id="catsPreview"></div>
+    <div class="formats-grid" id="formatsPreview" style="margin-top:16px"></div>
+    <div style="text-align:center;margin-top:16px"><a class="btn btn-ghost" href="formats.html">さらに 90+ フォーマットを探索</a></div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="container">
+  <div class="cta">
+    <div>
+      <h3>今すぐ、あなたのチップチューンを鳴らそう。</h3>
+      <p>ファイルをドロップするだけ。インストールも登録も不要です。</p>
+    </div>
+    <div class="cta-actions">
+      <a class="btn btn-primary" href="player.html">▶ Webプレイヤーを開く</a>
+      <a class="btn btn-ghost" href="formats.html">対応フォーマットを確認</a>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="brand" href="index.html"><div class="brand-mark"><span>Z</span></div><div><div class="brand-text"><b>ZX</b>Tune</div><div class="brand-sub">Chiptune Universe</div></div></a>
+        <p>ZXTuneはオープンソースのクロスプラットフォーム・チップチューン・プレイヤーです。100以上のフォーマット、15基以上のチップを一つのコアで。</p>
+        <div class="social" style="margin-top:12px">
+          <a href="https://github.com/vitamin-caig/zxtune" target="_blank" title="GitHub">GH</a>
+          <a href="https://t.me/zxtune_official" target="_blank" title="Telegram">TG</a>
+          <a href="https://x.com/ZXTune" target="_blank" title="X">𝕏</a>
+          <a href="https://zxtune.ru" target="_blank" title="Official">RU</a>
+        </div>
+      </div>
+      <div class="footer-links"><h4>プロダクト</h4><a href="player.html">Webプレイヤー</a><a href="players.html">デスクトップ (QT)</a><a href="https://play.google.com/store/apps/details?id=app.zxtune" target="_blank">Android</a><a href="https://github.com/vitamin-caig/zxtune" target="_blank">zxtune123 (CLI)</a></div>
+      <div class="footer-links"><h4>フォーマット</h4><a href="formats.html#aym">AY/YM (ZX)</a><a href="formats.html#console">コンソール (SPC/NSF/SID)</a><a href="formats.html#fm">FM (TurboFM)</a><a href="formats.html#archived">アーカイブ / ディスク</a></div>
+      <div class="footer-links"><h4>コミュニティ</h4><a href="https://zxtunes.com" target="_blank">zxtunes.com</a><a href="https://www.hvsc.c64.org" target="_blank">HVSC</a><a href="https://modarchive.org" target="_blank">ModArchive</a><a href="https://vgmrips.net" target="_blank">VGMRips</a></div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2009–2026 ZXTune Team • Vitamin Caig • Open Source (GPL/MIT) • Built with WebAssembly</span>
+      <span class="mono">zxtune-web • v5100 • Web Player Preview</span>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast"><span id="toastIcon">✨</span><span id="toastMsg">Copied</span></div>
+
+<script src="js/formats-data.js"></script>
+<script src="js/app.js"></script>
+<script src="js/player.js"></script>
+</body>
+</html>
