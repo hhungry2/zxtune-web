@@ -2,9 +2,10 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
+<script src="../js/theme.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hrust (.hrust) — ZXTune フォーマット図鑑</title>
-<meta name="description" content="Hrust (HRU,.hrust) — packedカテゴリ。ZXTuneでの再生方法と技術仕様を解説。">
+<title>フォーマット図鑑 — ZXTune / Chiptune Web Player</title>
+<meta name="description" content="ZXTune が対応するフォーマットの解説。">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2300FFD1'/><text x='16' y='22' text-anchor='middle' font-family='monospace' font-weight='800' font-size='18' fill='%23071118'>Z</text></svg>">
 <link rel="stylesheet" href="../css/style.css">
 </head>
@@ -12,7 +13,7 @@
 <div class="bg-grid"></div><div class="bg-glow"></div><div class="bg-noise"></div>
 <header class="header">
   <div class="container header-inner">
-    <a class="brand" href="../index.html"><div class="brand-mark"><span>Z</span></div><div><div class="brand-text"><b>ZX</b>Tune</div><div class="brand-sub">Format Atlas</div></div></a>
+    <a class="brand" href="../index.html"><div class="brand-mark"><span>Z</span></div><div><div class="brand-text"><b>ZX</b>Tune</div><div class="brand-sub">Chiptune Web Player</div></div></a>
     <nav class="nav"><a href="../index.html">ホーム</a><a href="../player.html">Webプレイヤー</a><a class="active" href="../formats.html">フォーマット</a></nav>
     <div class="header-actions"><a class="btn btn-ghost" href="../formats.html" style="padding:8px 14px">一覧へ戻る</a><a class="btn btn-primary" href="../player.html" style="padding:8px 14px">▶ 試す</a></div>
   </div>
@@ -29,146 +30,7 @@
 </footer>
 
 <script src="../js/formats-data.js"></script>
-<script>
-const id = location.pathname.split('/').pop().replace('.html','');
-const isCat = window.FORMAT_CATS?.some(c=>c.id===id);
-if(isCat){
-  const cat = FORMAT_CATS.find(c=>c.id===id);
-  const list = ZXTUNE_FORMATS.filter(f=>f.cat===id);
-  document.title = `${cat.label} — ZXTune フォーマット図鑑`;
-  document.querySelector('meta[name="description"]').content = cat.desc;
-  document.getElementById('detailRoot').innerHTML = `
-    <div class="detail-hero">
-      <div class="detail-head">
-        <div class="detail-icon">${cat.icon}</div>
-        <div class="detail-title"><h1>${cat.label}</h1><p>${list.length} formats • ${cat.desc}</p></div>
-        <div class="detail-stats"><span><b>${list.length}</b>フォーマット</span><span><b>${[...new Set(list.map(f=>f.chip))].length}</b>チップ</span></div>
-      </div>
-      <div class="detail-body">
-        <div>
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
-            ${list.map(f=>`
-              <a href="${f.id}.html" style="display:flex;gap:10px;padding:10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;transition:.15s">
-                <span style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:18px;color:var(--cyan)">${f.ext}</span>
-                <span style="flex:1;min-width:0"><b style="font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.name}</b><span style="font-size:11px;color:var(--muted)">${f.platform} • ${f.year}</span></span>
-                <span style="color:var(--muted)">→</span>
-              </a>
-            `).join('')}
-          </div>
-          <div style="margin-top:16px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:14px">
-            <h3 style="margin:0;font-size:14px">カテゴリについて</h3>
-            <p style="margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.8">${cat.desc} — ZXTuneはこのカテゴリの全フォーマットをネイティブにデコードします。ZIP/TRD内のファイルも透過的に展開して再生可能です。</p>
-            <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-              <a class="btn btn-primary" href="../player.html">▶ Webプレイヤーで試す</a>
-              <a class="btn btn-ghost" href="../formats.html">他カテゴリを見る</a>
-            </div>
-          </div>
-        </div>
-        <div class="detail-side">
-          <div class="info-box"><h4>カテゴリ情報</h4><dl><dt>アイコン</dt><dd>${cat.icon} ${cat.label}</dd><dt>収録数</dt><dd>${list.length} フォーマット</dd><dt>代表チップ</dt><dd>${[...new Set(list.map(f=>f.chip))].slice(0,3).join(', ')}</dd><dt>年代</dt><dd>${Math.min(...list.map(f=>parseInt(f.year)))}–${Math.max(...list.map(f=>parseInt(f.year)))}</dd></dl></div>
-          <div class="try-box"><h4>💡 すぐ試す</h4><p>このカテゴリのファイルをドラッグ＆ドロップで再生。ZIPの中でもOK。</p><a class="btn btn-primary" href="../player.html" style="width:100%;justify-content:center">Webプレイヤーを開く</a></div>
-        </div>
-      </div>
-    </div>
-  `;
-  document.getElementById('related').innerHTML = `
-    <h3 style="margin:0 0 10px;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace">他のカテゴリ</h3>
-    <div class="formats-cats">${FORMAT_CATS.filter(c=>c.id!==id).map(c=>`
-      <a class="cat-card" href="${c.id}.html" style="--cat:${c.color}"><div class="cat-head"><div class="cat-icon">${c.icon}</div><div><h3>${c.label}</h3><span>${ZXTUNE_FORMATS.filter(f=>f.cat===c.id).length} formats</span></div></div><p>${c.desc}</p></a>
-    `).join('')}</div>
-  `;
-} else {
-  const f = ZXTUNE_FORMATS.find(x=>x.id===id);
-  if(!f){
-    document.getElementById('detailRoot').innerHTML = `<div style="padding:40px;text-align:center;color:var(--muted)"><h2>フォーマットが見つかりません</h2><p>${id} に対応するページがありません。</p><a class="btn btn-ghost" href="../formats.html">一覧へ戻る</a></div>`;
-  } else {
-    document.title = `${f.name} (${f.ext}) — ZXTune フォーマット図鑑`;
-    document.querySelector('meta[name="description"]').content = f.desc + ' ' + f.long;
-    const cat = FORMAT_CATS.find(c=>c.id===f.cat);
-    document.getElementById('detailRoot').innerHTML = `
-      <div class="detail-hero">
-        <div class="detail-head">
-          <div class="detail-icon">${cat.icon}</div>
-          <div class="detail-title">
-            <h1>${f.name} <span style="font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--cyan)">${f.ext}</span></h1>
-            <p>${f.aka} • ${f.platform} • ${f.chip} • ${f.year}年 • <a href="${cat.id}.html" style="color:var(--cyan);text-decoration:underline">${cat.label}</a></p>
-          </div>
-          <div class="detail-stats">
-            <span><b>${f.ext}</b>拡張子</span>
-            <span><b>${f.year}</b>登場</span>
-            <span><b>${f.chip}</b>チップ</span>
-          </div>
-        </div>
-        <div class="detail-body">
-          <div class="detail-prose">
-            <p style="color:var(--text);font-size:16px;line-height:1.7"><b>${f.desc}</b></p>
-            <p>${f.long}</p>
-            <h3>技術仕様</h3>
-            <ul style="margin:0;padding-left:18px;display:grid;gap:6px">
-              <li>拡張子: <code>${(f.exts||[f.ext]).join(' / ')}</code></li>
-              <li>プラットフォーム: <code>${f.platform}</code></li>
-              <li>サウンドチップ: <code>${f.chip}</code></li>
-              <li>カテゴリ: <code>${cat.label}</code></li>
-              <li>初出: <code>${f.year}年</code></li>
-            </ul>
-            <h3>再生と互換性</h3>
-            <p>ZXTuneは <code>${f.name}</code> をネイティブデコーダで直接再生します。アーカイブ(<code>ZIP / RAR / 7z / TRD / SCL</code>) に入ったままでも自動で展開・検出します。WebプレイヤーではWASMコアが同じロジックで動作します。</p>
-            <h3>ヒント</h3>
-            <p>${f.cat==='aym' ? 'AY系はチャンネルミュート(<code>M</code>)で各チャンネルのフレーズをソロで聴くと作曲技法が学べます。' : f.cat==='console' ? 'コンソール系はループ点が複数ある場合があります。ループボタンで挙動を切り替えてください。' : f.cat==='packed' ? 'パック形式は自動展開されます。元フォーマットはプレイリストで確認できます。' : 'Webプレイヤーにドラッグ＆ドロップするだけで即再生できます。'}</p>
-            <div style="margin-top:16px;padding:12px;background:rgba(0,255,209,.06);border:1px solid rgba(0,255,209,.14);border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted)">
-              $ zxtune123 --info <b>${f.ext.toLowerCase().replace('.','')}track${f.ext}</b><br>
-              &gt; Format: <b style="color:var(--cyan)">${f.name}</b> (${f.aka})<br>
-              &gt; Chip: ${f.chip} • Platform: ${f.platform}<br>
-              &gt; Duration: 2:34 • Loop: 4:12
-            </div>
-          </div>
-          <div class="detail-side">
-            <div class="info-box">
-              <h4>ファイル情報</h4>
-              <dl>
-                <dt>正式名称</dt><dd>${f.name}</dd>
-                <dt>別名</dt><dd>${f.aka}</dd>
-                <dt>拡張子</dt><dd>${(f.exts||[f.ext]).join(', ')}</dd>
-                <dt>プラットフォーム</dt><dd>${f.platform}</dd>
-                <dt>チップ</dt><dd>${f.chip}</dd>
-                <dt>カテゴリ</dt><dd><a href="${cat.id}.html" style="color:var(--cyan)">${cat.label}</a></dd>
-                <dt>初出</dt><dd>${f.year}年</dd>
-              </dl>
-            </div>
-            <div class="info-box">
-              <h4>特徴</h4>
-              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${(f.features||[]).map(x=>`<span style="font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(0,255,209,.08);border:1px solid rgba(0,255,209,.15);color:var(--cyan);font-family:'JetBrains Mono',monospace">${x}</span>`).join('')}</div>
-            </div>
-            <div class="try-box">
-              <h4>▶ この形式を試す</h4>
-              <p>Webプレイヤーに <code>${f.ext}</code> ファイルをドロップするか、デモ曲で雰囲気を体験してください。</p>
-              <a class="btn btn-primary" href="../player.html" style="width:100%;justify-content:center">Webプレイヤーで再生</a>
-              <a class="btn btn-ghost" href="../formats.html" style="width:100%;justify-content:center;margin-top:8px">一覧に戻る</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-    // related — same cat
-    const rel = ZXTUNE_FORMATS.filter(x=>x.cat===f.cat && x.id!==f.id).slice(0,6);
-    document.getElementById('related').innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
-        <h3 style="margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace">同じカテゴリのフォーマット</h3>
-        <a href="${cat.id}.html" style="font-size:12px;color:var(--cyan)">すべて見る →</a>
-      </div>
-      <div class="formats-grid">
-        ${rel.map(r=>`
-          <a class="format-card" href="${r.id}.html">
-            <div class="format-top"><div class="format-ext">${r.ext}</div><span class="format-cat">${r.cat}</span></div>
-            <div class="format-name">${r.name}</div>
-            <div class="format-desc">${r.desc}</div>
-            <div class="format-meta"><span>${r.platform}</span><span>${r.year}</span></div>
-          </a>
-        `).join('')}
-      </div>
-    `;
-  }
-}
-</script>
+<script src="../js/plugins-data.js"></script>
+<script src="../js/format-page.js"></script>
 </body>
 </html>

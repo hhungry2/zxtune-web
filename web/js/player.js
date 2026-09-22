@@ -1,4 +1,4 @@
-// ZXTune Web Player — the page side of the real wasm engine.
+// ZXTune / Chiptune Web Player — the page side of the real wasm engine.
 //
 // The engine (player.mjs, zxtune.wasm, the worker and the worklet) is published
 // once at the root of the Pages site, and this site sits in a folder next to
@@ -21,6 +21,7 @@ const INTERPOLATION = {
   none:    {aym:0, saa:0, sid:0, dac:0},
 };
 const SETTINGS_KEY = 'zxtune.web.settings';
+const SITE_NAME = 'ZXTune / Chiptune Web Player';
 
 // The sample set shipped with the engine: one tune per sound chip.
 const SAMPLES = [
@@ -136,12 +137,16 @@ function showTrack(t){
   setText(els.infoChip, t.chip);
   setText(els.infoDur, `${fmt(t.durationMs)} • ループ: ${loopLabel()}`);
   setText(document.getElementById('chipInfo'), t.chip);
+  // the index page's hero card shows what the player has selected
+  setText(document.getElementById('heroArt'), t.icon);
+  setText(document.getElementById('heroTitle'), [t.title, t.author].filter(Boolean).join(' — '));
+  setText(document.getElementById('heroMeta'), [t.format, t.chip, fmt(t.durationMs)].join(' • '));
   updateMediaMetadata(t);
 }
 
 function syncDocumentTitle(){
   if(!current) return;
-  document.title = playing ? `▶ ${current.title} — ZXTune` : `${current.title} — ZXTune Web Player`;
+  document.title = playing ? `▶ ${current.title} — ZXTune` : `${current.title} — ${SITE_NAME}`;
 }
 
 function updateProgress(){
@@ -860,6 +865,24 @@ window.clearPlaylist=()=>{
   if(window.ResizeObserver) new ResizeObserver(resize).observe(canvas);
   else window.addEventListener('resize', resize);
   resize();
+  // canvases cannot read CSS variables, so the theme's colors are copied here
+  let pal;
+  function palette(){
+    const T=window.zxTheme, dark=!T || T.current==='dark';
+    const c=(n, fallback)=>T ? T.color(n) : fallback;
+    const a=(n, x, fallback)=>T ? T.rgba(n, x) : `rgba(${fallback},${x})`;
+    pal={
+      top:a('panel-rgb', 0, '18,24,46'), floor:a('bg-rgb', dark ? 0.55 : 0.35, '7,10,18'),
+      grid:a('ink', dark ? 0.04 : 0.06, '255,255,255'),
+      cyan:c('cyan', '#00FFD1'), violet:c('violet', '#7C5CFF'), magenta:a('magenta-rgb', 0.8, '255,59,130'),
+      glow:a('cyan-rgb', 0.25, '0,255,209'), glow2:a('cyan-rgb', 0.4, '0,255,209'), wash:a('cyan-rgb', 0.18, '0,255,209'),
+      orb:a('cyan-rgb', dark ? 0.14 : 0.12, '0,255,209'), orb2:a('violet-rgb', dark ? 0.10 : 0.09, '124,92,255'),
+      idle:a('ink', dark ? 0.10 : 0.12, '255,255,255'), line:a('ink', dark ? 0.06 : 0.12, '255,255,255'),
+      label:a('ink', dark ? 0.28 : 0.5, '255,255,255'),
+    };
+  }
+  palette();
+  window.addEventListener('zxtheme', palette);
   const dataArray = new Uint8Array(256);
   let mode=0; //0 spectrum,1 waveform
   canvas.addEventListener('click', ()=>{ mode^=1; toast(mode?'波形表示':'スペクトラム表示', mode?'〰️':'▮▮'); });
@@ -874,11 +897,11 @@ window.clearPlaylist=()=>{
     ctx.clearRect(0,0,w,h);
     // bg
     const g=ctx.createLinearGradient(0,0,0,h);
-    g.addColorStop(0,'rgba(18,24,46,0.0)');
-    g.addColorStop(1,'rgba(7,10,18,0.55)');
+    g.addColorStop(0,pal.top);
+    g.addColorStop(1,pal.floor);
     ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
     // grid
-    ctx.strokeStyle='rgba(255,255,255,0.04)';
+    ctx.strokeStyle=pal.grid;
     ctx.lineWidth=1*DPR;
     for(let x=0;x<w;x+=32*DPR){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
     for(let y=0;y<h;y+=32*DPR){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
@@ -896,17 +919,17 @@ window.clearPlaylist=()=>{
           const x=w*0.03 + i*barW;
           const y=h - bh - 12*DPR;
           const grad=ctx.createLinearGradient(x,y,x,y+bh);
-          grad.addColorStop(0,'#00FFD1');
-          grad.addColorStop(0.5,'#7C5CFF');
-          grad.addColorStop(1,'rgba(255,59,130,0.8)');
+          grad.addColorStop(0,pal.cyan);
+          grad.addColorStop(0.5,pal.violet);
+          grad.addColorStop(1,pal.magenta);
           ctx.fillStyle=grad;
-          ctx.shadowColor='rgba(0,255,209,0.25)'; ctx.shadowBlur=6*DPR;
+          ctx.shadowColor=pal.glow; ctx.shadowBlur=6*DPR;
           ctx.beginPath(); ctx.roundRect(x, y, barW-3*DPR, bh, [4*DPR,4*DPR,2,2]); ctx.fill();
           ctx.shadowBlur=0;
         }
       } else {
         analyser.getByteTimeDomainData(dataArray);
-        ctx.strokeStyle='#00FFD1'; ctx.lineWidth=2*DPR; ctx.shadowColor='rgba(0,255,209,0.4)'; ctx.shadowBlur=8*DPR;
+        ctx.strokeStyle=pal.cyan; ctx.lineWidth=2*DPR; ctx.shadowColor=pal.glow2; ctx.shadowBlur=8*DPR;
         ctx.beginPath();
         for(let i=0;i<dataArray.length;i++){
           const x=(i/dataArray.length)*w;
@@ -916,7 +939,7 @@ window.clearPlaylist=()=>{
         ctx.stroke(); ctx.shadowBlur=0;
         // fill under
         const grad=ctx.createLinearGradient(0,0,0,h);
-        grad.addColorStop(0,'rgba(0,255,209,0.18)');
+        grad.addColorStop(0,pal.wash);
         grad.addColorStop(1,'rgba(0,0,0,0)');
         ctx.fillStyle=grad;
         ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath(); ctx.fill();
@@ -932,17 +955,17 @@ window.clearPlaylist=()=>{
         const bh=v*h;
         const x=w*0.03 + i*barW;
         const y=h - bh - 12*DPR;
-        ctx.fillStyle='rgba(255,255,255,0.10)';
+        ctx.fillStyle=pal.idle;
         ctx.beginPath(); ctx.roundRect(x,y,barW-3*DPR,bh,[3,3,1,1]); ctx.fill();
       }
-      ctx.fillStyle='rgba(255,255,255,0.28)';
+      ctx.fillStyle=pal.label;
       ctx.font=`${11*DPR}px JetBrains Mono, monospace`;
       ctx.textAlign='center';
       ctx.fillText(bootError ? 'このブラウザでは再生できません' : !player ? 'エンジンを読み込み中…' : '▶ を押して再生 — クリックで波形切替', w/2, h/2);
       ctx.textAlign='left';
     }
     // bottom line
-    ctx.strokeStyle='rgba(255,255,255,0.06)';
+    ctx.strokeStyle=pal.line;
     ctx.lineWidth=1*DPR;
     ctx.beginPath(); ctx.moveTo(0,h-0.5*DPR); ctx.lineTo(w,h-0.5*DPR); ctx.stroke();
   }

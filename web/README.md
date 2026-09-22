@@ -1,6 +1,6 @@
-# ZXTune Web — メインサイト
+# ZXTune / Chiptune Web Player
 
-カッコいいデザインのメインサイト（静的サイト）です。
+ZXTune のメインサイト（静的サイト）です。ライトモードが既定で、ヘッダーのボタンでダークモードに切り替えられます。
 
 ## 構成
 
@@ -10,25 +10,29 @@ web/
   player.html     — フルWebプレイヤー（ZXTune の wasm エンジンで実再生 + WebAudio可視化）
   players.html    — プレイヤー詳細ガイド（Web / QT / Android / CLI の徹底解説）
   formats.html    — フォーマット図鑑（一覧・検索・カテゴリフィルタ）
-  formats/*.html  — 各フォーマットの解説ページ（56フォーマット + 7カテゴリ）
-  css/style.css   — Neo Chiptune テーマ（ダーク + ネオン + グリッド）
+  formats/*.html  — 各フォーマットの解説ページ（61形式 + 7カテゴリ。中身は js/format-page.js が描画）
+  css/style.css   — Neo Chiptune テーマ（ライト既定 + ダーク）
   js/
-    formats-data.js — 107フォーマットのDB
+    theme.js        — ライト / ダークの切り替え（全ページの <head> で最初に読み込む）
+    formats-data.js — 図鑑に載せる形式（エンジンのプラグイン ID と照合済み）
+    plugins-data.js — エンジンが報告する全プラグイン（生成物、手で編集しない）
+    format-page.js  — 解説ページの描画
     app.js          — ヒーローCanvas、カテゴリ描画
     player.js       — wasm エンジンのUI側（再生/シーク/ミュート/可視化/Drop）
-    formats.js      — フィルタリング
+    formats.js      — 図鑑の絞り込みと全プラグイン一覧
 ```
 
 ## デザイン
 
-- **テーマ**: Neo Chiptune — ダーク (#070A12) + シアン (#00FFD1) / マゼンタ (#FF3B82) / バイオレット (#7C5CFF)
+- **テーマ**: Neo Chiptune。ライト (#F5F7FB、既定) とダーク (#070A12)。色は `:root` と `:root[data-theme="dark"]` のトークンで定義し、
+  白の半透明は `rgba(var(--ink),a)`、アクセントは `rgba(var(--cyan-rgb),a)` のように書きます。canvas は `zxTheme.color()` / `zxTheme.rgba()` で色を取ります
 - **タイポ**: Space Grotesk + JetBrains Mono + Noto Sans JP
 - **エフェクト**: グリッド、グロー、ノイズ、スキャンライン、ガラスモーフィズム
 - **レスポンシブ**: 1280px / 1024px / 680px ブレークポイント
 
 ## Webプレイヤーの仕組み（説明）
 
-- **WASMコア**: C++のZXTuneコアをEmscriptenでビルド、AudioWorkletで48kHz合成
+- **WASMコア**: C++のZXTuneコアをEmscriptenでビルド、AudioWorkletで出力デバイスのサンプリング周波数で合成
 - **透過展開**: ZIP/RAR/7z/TRD/SCL/FDIをブラウザ内で展開
 - **可視化**: AnalyserNode→ スペクトラム / 波形、チャンネル別ミュート
 - **操作**: Space / ←→ / M / L / N/P、ドラッグ＆ドロップ
@@ -81,3 +85,11 @@ python3 -m http.server 8000 --directory site/dist
   PWA としてインストールできます。Service Worker はネットワーク優先で、取れないときだけキャッシュから返すので、
   公開した更新は次の読み込みで反映され、一度開いたページと曲はオフラインでも再生できます。
   エンジンの worker と wasm も管理下に入るよう、スコープはこのフォルダではなくルートです。
+
+## フォーマットのデータ
+
+- `js/plugins-data.js` はエンジンの `zxtune.plugins()` の結果から作ります。エンジンを作り直したら、
+  Node でプラグイン一覧を JSON に書き出し、生成スクリプトで作り直してください（件数もここから出ます）。
+- `js/formats-data.js` の各形式は `plugins` にエンジンの ID を持ちます（同じ ID を複数の形式が使う場合は `"ID|説明の一部"`）。
+  名前・チップはエンジンの説明とデバイス指定に、拡張子はリポジトリの `samples/` の実ファイルか一般的なものに合わせています。
+  裏付けのない年や作者は書きません。

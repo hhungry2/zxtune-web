@@ -2,29 +2,30 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
+<script src="js/theme.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Webプレイヤー — ZXTune</title>
+<title>Webプレイヤー — ZXTune / Chiptune Web Player</title>
 <meta name="description" content="ZXTune Webプレイヤー — ブラウザでPT3/SPC/NSF/SID/VGMなど100+フォーマットを直接再生。ドラッグ＆ドロップ対応。">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2300FFD1'/><text x='16' y='22' text-anchor='middle' font-family='monospace' font-weight='800' font-size='18' fill='%23071118'>Z</text></svg>">
 <link rel="stylesheet" href="css/style.css">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#070A12">
+<meta name="theme-color" content="#F5F7FB">
 <style>
 .player-page{display:grid;grid-template-columns:320px 1fr 320px;gap:16px;padding:18px 0 28px}
 @media(max-width:1100px){.player-page{grid-template-columns:280px 1fr}}
 @media(max-width:760px){.player-page{grid-template-columns:1fr}}
-.side-panel{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 120px);position:sticky;top:78px}
-.side-panel .head{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.side-panel{background:rgba(var(--ink),.03);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 120px);position:sticky;top:78px}
+.side-panel .head{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(var(--ink),.02)}
 .side-panel .head h3{margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace}
 .center-col{display:flex;flex-direction:column;gap:16px;min-width:0}
-.kbd{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(255,255,255,.08);border:1px solid var(--border);border-bottom-width:2px;color:var(--muted)}
+.kbd{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(var(--ink),.08);border:1px solid var(--border);border-bottom-width:2px;color:var(--muted)}
 </style>
 </head>
 <body>
 <div class="bg-grid"></div><div class="bg-glow"></div><div class="bg-noise"></div>
 <header class="header">
   <div class="container header-inner">
-    <a class="brand" href="index.html"><div class="brand-mark"><span>Z</span></div><div><div class="brand-text"><b>ZX</b>Tune</div><div class="brand-sub">Web Player</div></div></a>
+    <a class="brand" href="index.html"><div class="brand-mark"><span>Z</span></div><div><div class="brand-text"><b>ZX</b>Tune</div><div class="brand-sub">Chiptune Web Player</div></div></a>
     <nav class="nav"><a href="index.html">ホーム</a><a class="active" href="player.html">Webプレイヤー</a><a href="formats.html">フォーマット</a><a href="players.html">プレイヤー</a></nav>
     <div class="header-actions"><a class="btn btn-ghost" href="formats.html" style="padding:8px 14px;font-size:13px">フォーマット</a><button class="btn btn-primary" style="padding:8px 14px" onclick="document.getElementById('fileInput2').click()">＋ ファイルを開く</button></div>
   </div>
@@ -33,7 +34,7 @@
 <div class="container">
   <div style="padding:12px 0 0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
     <div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:12px">
-      <span class="mono" style="padding:5px 9px;border-radius:999px;background:rgba(0,255,209,.1);border:1px solid rgba(0,255,209,.2);color:var(--cyan)">● LIVE WASM</span>
+      <span class="mono" style="padding:5px 9px;border-radius:999px;background:rgba(var(--cyan-rgb),.1);border:1px solid rgba(var(--cyan-rgb),.2);color:var(--cyan)">● LIVE WASM</span>
       <span><span id="engineInfo">—</span> • <span id="chipInfo" style="color:var(--text)">—</span></span>
     </div>
     <div style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)">
@@ -44,9 +45,9 @@
   <div class="player-page">
     <!-- left: playlist -->
     <div class="side-panel">
-      <div class="head"><h3>プレイリスト</h3><span class="mono" id="plCount2" style="font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--border)">8 tracks</span></div>
+      <div class="head"><h3>プレイリスト</h3><span class="mono" id="plCount2" style="font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(var(--ink),.06);border:1px solid var(--border)">8 tracks</span></div>
       <div style="padding:10px;display:flex;gap:6px">
-        <input id="search" placeholder="検索 — pt3, sid, author…" style="flex:1;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:999px;padding:8px 12px;color:var(--text);font-size:12px;outline:none">
+        <input id="search" placeholder="検索 — pt3, sid, author…" style="flex:1;background:rgba(var(--ink),.06);border:1px solid var(--border);border-radius:999px;padding:8px 12px;color:var(--text);font-size:12px;outline:none">
         <button class="icon-btn small" title="シャッフル" onclick="shufflePlaylist()">⇄</button>
       </div>
       <div class="playlist" id="playlist2" style="flex:1;overflow:auto"></div>
@@ -98,13 +99,13 @@
         <input type="file" id="fileInput2" hidden multiple>
       </div>
 
-      <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;padding:14px">
+      <div style="background:rgba(var(--ink),.03);border:1px solid var(--border);border-radius:14px;padding:14px">
         <h3 style="margin:0;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace">プレイヤーの説明 — 仕組みとTips</h3>
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px">
-          <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:12px"><b style="font-size:13px">🎹 正確なチップエミュレーション</b><p style="margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.6">AY-3-8910 / YM2149 / SID / SPC700 / 2A03 / YM2612 などをサイクル精度で再現。オリジナルのプレイヤコード(AY)もWASM上のZ80エミュレータで実行。</p></div>
-          <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:12px"><b style="font-size:13px">⚡ WebAssembly + Worklet</b><p style="margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.6">C++コアをEmscriptenでWASM化。AudioWorkletで途切れなく合成 (出力デバイスのサンプリング周波数)。メインスレッドをブロックしません。</p></div>
-          <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:12px"><b style="font-size:13px">📦 アーカイブ透過再生</b><p style="margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.6">ZIP/RAR/7z/LHA/TRD/SCL/FDIをブラウザ内で展開。中に100曲入っていてもプレイリストに一括追加。</p></div>
-          <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:12px"><b style="font-size:13px">🎚️ プロ向けコントロール</b><p style="margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.6">チャンネルミュート、補間切替、AYM レイアウト、AY/YM 切替、DC除去、ループ / シャッフル、メディアキー。</p></div>
+          <div style="background:rgba(var(--ink),.03);border:1px solid var(--border);border-radius:10px;padding:12px"><b style="font-size:13px">🎹 音源チップのエミュレーション</b><p style="margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.6">AY-3-8910 / YM2149 / SID / SPC700 / 2A03 / YM2612 などの音源チップをエミュレート。AY/EMUL 形式は、収められた Z80 のプレイヤーコードごと実行します。</p></div>
+          <div style="background:rgba(var(--ink),.03);border:1px solid var(--border);border-radius:10px;padding:12px"><b style="font-size:13px">⚡ WebAssembly + Worklet</b><p style="margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.6">C++コアをEmscriptenでWASM化。AudioWorkletで途切れなく合成 (出力デバイスのサンプリング周波数)。メインスレッドをブロックしません。</p></div>
+          <div style="background:rgba(var(--ink),.03);border:1px solid var(--border);border-radius:10px;padding:12px"><b style="font-size:13px">📦 アーカイブ透過再生</b><p style="margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.6">ZIP/RAR/7z/LHA/TRD/SCL/FDIをブラウザ内で展開。中に100曲入っていてもプレイリストに一括追加。</p></div>
+          <div style="background:rgba(var(--ink),.03);border:1px solid var(--border);border-radius:10px;padding:12px"><b style="font-size:13px">🎚️ プロ向けコントロール</b><p style="margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.6">チャンネルミュート、補間切替、AYM レイアウト、AY/YM 切替、DC除去、ループ / シャッフル、メディアキー。</p></div>
         </div>
         <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><span class="kbd">M</span><span style="font-size:12px;color:var(--muted)">A ch ミュート</span><span class="kbd">S</span><span style="font-size:12px;color:var(--muted)">スペクトラム切替</span><span class="kbd">L</span><span style="font-size:12px;color:var(--muted)">ループ</span><span class="kbd">Space</span><span style="font-size:12px;color:var(--muted)">再生/停止</span></div>
       </div>
@@ -116,14 +117,14 @@
       <div style="padding:14px;display:grid;gap:12px;overflow:auto">
         <div class="info-box" style="margin:0"><h4>現在再生中</h4><dl><dt>タイトル</dt><dd id="infoTitle">—</dd><dt>作者</dt><dd id="infoAuthor">—</dd><dt>フォーマット</dt><dd id="infoFormat">—</dd><dt>チップ</dt><dd id="infoChip">—</dd><dt>長さ / ループ</dt><dd id="infoDur">—</dd></dl></div>
         <div class="info-box"><h4>オーディオ設定</h4><div style="display:grid;gap:8px;font-size:12px;color:var(--muted)">
-          <label>補間 <select id="interp" style="width:100%;margin-top:4px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option value="default">チップごとの既定</option><option value="hq">高品質 (IIR ローパス)</option><option value="lq">低品質 (2点平均)</option><option value="none">なし</option></select></label>
-          <label>AYM レイアウト <select id="aymLayout" style="width:100%;margin-top:4px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option value="0">ABC (標準)</option><option value="1">ACB</option><option value="2">BAC</option><option value="3">BCA</option><option value="4">CAB</option><option value="5">CBA</option><option value="6">Mono</option></select></label>
-          <label title="音量カーブとエンベロープの段数が変わります (AY 16段 / YM 32段)">AY/YM チップ <select id="aymType" style="width:100%;margin-top:4px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option value="0">AY-3-8910 (既定)</option><option value="1">YM2149F</option></select></label>
+          <label>補間 <select id="interp" style="width:100%;margin-top:4px;background:rgba(var(--ink),.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option value="default">チップごとの既定</option><option value="hq">高品質 (IIR ローパス)</option><option value="lq">低品質 (2点平均)</option><option value="none">なし</option></select></label>
+          <label>AYM レイアウト <select id="aymLayout" style="width:100%;margin-top:4px;background:rgba(var(--ink),.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option value="0">ABC (標準)</option><option value="1">ACB</option><option value="2">BAC</option><option value="3">BCA</option><option value="4">CAB</option><option value="5">CBA</option><option value="6">Mono</option></select></label>
+          <label title="音量カーブとエンベロープの段数が変わります (AY 16段 / YM 32段)">AY/YM チップ <select id="aymType" style="width:100%;margin-top:4px;background:rgba(var(--ink),.06);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)"><option value="0">AY-3-8910 (既定)</option><option value="1">YM2149F</option></select></label>
           <label style="display:flex;align-items:center;gap:8px" title="AY / SAA の出力に乗る直流成分をカットします"><input type="checkbox" id="dcFilter" checked> DC除去フィルタ</label>
           <div style="font-size:11px;line-height:1.5;opacity:.8">VTX ファイルはファイル内のチップ種別・レイアウト指定が優先されます。</div>
         </div></div>
         <div class="try-box"><h4>💡 ヒント</h4><p>TRDやZIPをドロップすると、中の全曲がプレイリストに入ります。プレイリストはXSPFで保存・読み込みできます。</p><a class="btn btn-ghost" style="width:100%;font-size:12px;box-sizing:border-box;text-align:center;text-decoration:none" href="players.html#web">使い方をもっと見る</a></div>
-        <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">
+        <div style="background:rgba(var(--ink),.03);border:1px solid var(--border);border-radius:10px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">
           <div>CORE: ZXTune (WebAssembly)</div><div id="engineRate">SAMPLERATE: —</div><div id="engineLoad">RENDER: —</div>
         </div>
       </div>

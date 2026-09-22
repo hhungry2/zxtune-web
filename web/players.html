@@ -2,19 +2,20 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
+<script src="js/theme.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>プレイヤー — ZXTune 4つの再生環境を徹底解説</title>
+<title>プレイヤー — ZXTune / Chiptune Web Player</title>
 <meta name="description" content="ZXTuneの4つのプレイヤー — Web (ブラウザ) / QT (デスクトップ) / Android (モバイル) / zxtune123 (CLI) を徹底比較。機能、対応フォーマット、使い方を解説。">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2300FFD1'/><text x='16' y='22' text-anchor='middle' font-family='monospace' font-weight='800' font-size='18' fill='%23071118'>Z</text></svg>">
 <link rel="stylesheet" href="css/style.css">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#070A12">
+<meta name="theme-color" content="#F5F7FB">
 </head>
 <body>
 <div class="bg-grid"></div><div class="bg-glow"></div><div class="bg-noise"></div>
 <header class="header">
   <div class="container header-inner">
-    <a class="brand" href="index.html"><div class="brand-mark"><span>Z</span></div><div><div class="brand-text"><b>ZX</b>Tune</div><div class="brand-sub">Players Guide</div></div></a>
+    <a class="brand" href="index.html"><div class="brand-mark"><span>Z</span></div><div><div class="brand-text"><b>ZX</b>Tune</div><div class="brand-sub">Chiptune Web Player</div></div></a>
     <nav class="nav"><a href="index.html">ホーム</a><a href="player.html">Webプレイヤー</a><a href="formats.html">フォーマット</a><a class="active" href="players.html">プレイヤー</a></nav>
     <div class="header-actions"><a class="btn btn-primary" href="player.html" style="padding:8px 14px">▶ Webで試す</a></div>
   </div>
@@ -31,7 +32,7 @@
   <div class="detail-hero" id="web">
     <div class="detail-head">
       <div class="detail-icon">🌐</div>
-      <div class="detail-title"><h1>ZXTune Web <span style="font-family:'JetBrains Mono',monospace;font-size:14px;padding:4px 8px;border-radius:999px;background:rgba(0,255,209,.14);border:1px solid rgba(0,255,209,.22);color:var(--cyan)">NEW • WASM</span></h1><p>ブラウザだけで完結 • インストール不要 • PWA対応 • 開いた曲はオフラインでも再生</p></div>
+      <div class="detail-title"><h1>ZXTune Web <span style="font-family:'JetBrains Mono',monospace;font-size:14px;padding:4px 8px;border-radius:999px;background:rgba(var(--cyan-rgb),.14);border:1px solid rgba(var(--cyan-rgb),.22);color:var(--cyan)">NEW • WASM</span></h1><p>ブラウザだけで完結 • インストール不要 • PWA対応 • 開いた曲はオフラインでも再生</p></div>
       <div class="detail-stats"><span><b>AudioWorklet</b>合成</span><span><b>インストール</b>不要</span><span><b>WASM</b>コア</span></div>
     </div>
     <div class="detail-body">
@@ -57,7 +58,7 @@
       </div>
       <div class="detail-side">
         <div class="info-box"><h4>クイックスタート</h4>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:8px;padding:10px;line-height:1.6">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(var(--shade),calc(.3 * var(--shade-k)));border:1px solid var(--border);border-radius:8px;padding:10px;line-height:1.6">
             $ open <b style="color:var(--cyan)">player.html</b><br>
             # drag & drop <b style="color:var(--cyan)">demo.pt3</b><br>
             ▶ now playing
@@ -72,8 +73,8 @@
   <!-- QT -->
   <div class="detail-hero">
     <div class="detail-head">
-      <div class="detail-icon" style="background:linear-gradient(135deg, rgba(124,92,255,.18), rgba(0,255,209,.12))">🖥️</div>
-      <div class="detail-title"><h1>ZXTune QT <span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:999px;background:rgba(124,92,255,.14);border:1px solid rgba(124,92,255,.22);color:#B8A6FF">DESKTOP • Qt5/6</span></h1><p>Windows / Linux / macOS • 最も高機能 • プラグイン拡張</p></div>
+      <div class="detail-icon" style="background:linear-gradient(135deg, rgba(var(--violet-rgb),.18), rgba(var(--cyan-rgb),.12))">🖥️</div>
+      <div class="detail-title"><h1>ZXTune QT <span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:999px;background:rgba(var(--violet-rgb),.14);border:1px solid rgba(var(--violet-rgb),.22);color:var(--violet-text)">DESKTOP • Qt5/6</span></h1><p>Windows / Linux / macOS • 最も高機能 • プラグイン拡張</p></div>
       <div class="detail-stats"><span><b>Qt</b>フレームワーク</span><span><b>変換</b>対応</span><span><b>OG</b>サポート</span></div>
     </div>
     <div class="detail-body">
@@ -99,8 +100,8 @@
   <!-- Android -->
   <div class="detail-hero">
     <div class="detail-head">
-      <div class="detail-icon" style="background:linear-gradient(135deg, rgba(0,255,136,.18), rgba(0,229,255,.12))">📱</div>
-      <div class="detail-title"><h1>ZXTune Android <span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:999px;background:rgba(0,255,136,.14);border:1px solid rgba(0,255,136,.22);color:#6EFFB8">MOBILE • 100K+ DL (Google Play)</span></h1><p>Android 4.1+ • オンラインカタログ統合 • ウィジェット / 着信音</p></div>
+      <div class="detail-icon" style="background:linear-gradient(135deg, rgba(var(--green-rgb),.18), rgba(var(--cyan-rgb),.12))">📱</div>
+      <div class="detail-title"><h1>ZXTune Android <span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:999px;background:rgba(var(--green-rgb),.14);border:1px solid rgba(var(--green-rgb),.22);color:var(--green-text)">MOBILE • 100K+ DL (Google Play)</span></h1><p>Android 4.1+ • オンラインカタログ統合 • ウィジェット / 着信音</p></div>
       <div class="detail-stats"><span><b>11+</b>カタログ</span><span><b>xxhdpi</b>対応</span><span><b>4.1+</b>Android</span></div>
     </div>
     <div class="detail-body">
@@ -126,15 +127,15 @@
   <!-- CLI -->
   <div class="detail-hero">
     <div class="detail-head">
-      <div class="detail-icon" style="background:linear-gradient(135deg, rgba(255,214,10,.18), rgba(255,59,130,.12))">⌘</div>
-      <div class="detail-title"><h1>zxtune123 <span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:999px;background:rgba(255,214,10,.18);border:1px solid rgba(255,214,10,.28);color:#FFD60A">CLI • Headless</span></h1><p>コンソール / スクリプト / サーバ • 軽量 • バッチ変換</p></div>
+      <div class="detail-icon" style="background:linear-gradient(135deg, rgba(var(--yellow-rgb),.18), rgba(var(--magenta-rgb),.12))">⌘</div>
+      <div class="detail-title"><h1>zxtune123 <span style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border-radius:999px;background:rgba(var(--yellow-rgb),.18);border:1px solid rgba(var(--yellow-rgb),.28);color:var(--yellow)">CLI • Headless</span></h1><p>コンソール / スクリプト / サーバ • 軽量 • バッチ変換</p></div>
       <div class="detail-stats"><span><b>make</b>ビルド</span><span><b>pipe</b>対応</span><span><b>bench</b>内蔵</span></div>
     </div>
     <div class="detail-body">
       <div class="detail-prose">
         <p><b>端末で完結するミニマリスト。</b> GUI不要で再生・情報表示・変換・ベンチマーク。サーバでの自動変換や大量ファイルのバッチ処理に最適。</p>
         <h3>使用例</h3>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;background:#0A0E1A;border:1px solid var(--border);border-radius:8px;padding:12px;line-height:1.7">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:12px;line-height:1.7">
           $ zxtune123 --help<br>
           $ zxtune123 track.pt3 <span style="color:var(--muted)"># 再生</span><br>
           $ zxtune123 --info track.spc <span style="color:var(--muted)"># メタ情報</span><br>
@@ -151,24 +152,24 @@
   </div>
 
   <!-- comparison -->
-  <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:16px;overflow:hidden">
+  <div style="background:rgba(var(--ink),.03);border:1px solid var(--border);border-radius:16px;overflow:hidden">
     <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <h3 style="margin:0;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace">比較表</h3>
       <span class="mono" style="font-size:11px;color:var(--muted)">1 core, 4 UIs — 同じ音、異なる体験</span>
     </div>
     <div style="overflow:auto">
       <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:640px">
-        <thead style="background:rgba(255,255,255,.04);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">
+        <thead style="background:rgba(var(--ink),.04);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">
           <tr><th style="padding:10px 12px;text-align:left">機能</th><th style="padding:10px 12px">Web</th><th style="padding:10px 12px">QT</th><th style="padding:10px 12px">Android</th><th style="padding:10px 12px">CLI</th></tr>
         </thead>
         <tbody style="color:var(--muted)">
-          <tr style="border-top:1px solid var(--border)"><td style="padding:10px 12px;color:var(--text)">対応フォーマット</td><td style="padding:10px 12px;text-align:center">107</td><td style="padding:10px 12px;text-align:center">107</td><td style="padding:10px 12px;text-align:center">107</td><td style="padding:10px 12px;text-align:center">107</td></tr>
-          <tr style="border-top:1px solid rgba(255,255,255,.04)"><td style="padding:10px 12px;color:var(--text)">プレイリスト</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">◎ 高機能</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">—</td></tr>
-          <tr style="border-top:1px solid rgba(255,255,255,.04)"><td style="padding:10px 12px;color:var(--text)">ZIP/TRD自動展開</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">○</td></tr>
-          <tr style="border-top:1px solid rgba(255,255,255,.04)"><td style="padding:10px 12px;color:var(--text)">変換 (WAV/MP3)</td><td style="padding:10px 12px;text-align:center">—</td><td style="padding:10px 12px;text-align:center">◎</td><td style="padding:10px 12px;text-align:center">—</td><td style="padding:10px 12px;text-align:center">○</td></tr>
-          <tr style="border-top:1px solid rgba(255,255,255,.04)"><td style="padding:10px 12px;color:var(--text)">オンラインカタログ</td><td style="padding:10px 12px;text-align:center">△ (URL読み込み)</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">◎</td><td style="padding:10px 12px;text-align:center">—</td></tr>
-          <tr style="border-top:1px solid rgba(255,255,255,.04)"><td style="padding:10px 12px;color:var(--text)">可視化</td><td style="padding:10px 12px;text-align:center">Spectrum+Scope</td><td style="padding:10px 12px;text-align:center">Spectrum</td><td style="padding:10px 12px;text-align:center">Spectrum</td><td style="padding:10px 12px;text-align:center">—</td></tr>
-          <tr style="border-top:1px solid rgba(255,255,255,.04)"><td style="padding:10px 12px;color:var(--text)">インストール</td><td style="padding:10px 12px;text-align:center">不要</td><td style="padding:10px 12px;text-align:center">要</td><td style="padding:10px 12px;text-align:center">要</td><td style="padding:10px 12px;text-align:center">要</td></tr>
+          <tr style="border-top:1px solid var(--border)"><td style="padding:10px 12px;color:var(--text)">対応フォーマット</td><td style="padding:10px 12px;text-align:center">382 プラグイン</td><td style="padding:10px 12px;text-align:center">同じコア<br><small>(ビルドにより差あり)</small></td><td style="padding:10px 12px;text-align:center">同じコア<br><small>(ビルドにより差あり)</small></td><td style="padding:10px 12px;text-align:center">同じコア<br><small>(ビルドにより差あり)</small></td></tr>
+          <tr style="border-top:1px solid rgba(var(--ink),.04)"><td style="padding:10px 12px;color:var(--text)">プレイリスト</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">◎ 高機能</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">—</td></tr>
+          <tr style="border-top:1px solid rgba(var(--ink),.04)"><td style="padding:10px 12px;color:var(--text)">ZIP/TRD自動展開</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">○</td></tr>
+          <tr style="border-top:1px solid rgba(var(--ink),.04)"><td style="padding:10px 12px;color:var(--text)">変換 (WAV/MP3)</td><td style="padding:10px 12px;text-align:center">—</td><td style="padding:10px 12px;text-align:center">◎</td><td style="padding:10px 12px;text-align:center">—</td><td style="padding:10px 12px;text-align:center">○</td></tr>
+          <tr style="border-top:1px solid rgba(var(--ink),.04)"><td style="padding:10px 12px;color:var(--text)">オンラインカタログ</td><td style="padding:10px 12px;text-align:center">△ (URL読み込み)</td><td style="padding:10px 12px;text-align:center">○</td><td style="padding:10px 12px;text-align:center">◎</td><td style="padding:10px 12px;text-align:center">—</td></tr>
+          <tr style="border-top:1px solid rgba(var(--ink),.04)"><td style="padding:10px 12px;color:var(--text)">可視化</td><td style="padding:10px 12px;text-align:center">Spectrum+Scope</td><td style="padding:10px 12px;text-align:center">Spectrum</td><td style="padding:10px 12px;text-align:center">Spectrum</td><td style="padding:10px 12px;text-align:center">—</td></tr>
+          <tr style="border-top:1px solid rgba(var(--ink),.04)"><td style="padding:10px 12px;color:var(--text)">インストール</td><td style="padding:10px 12px;text-align:center">不要</td><td style="padding:10px 12px;text-align:center">要</td><td style="padding:10px 12px;text-align:center">要</td><td style="padding:10px 12px;text-align:center">要</td></tr>
         </tbody>
       </table>
     </div>
