@@ -61,6 +61,7 @@ player.render(buffer, 4096);
 const pcm = zxtune.HEAP16.subarray(buffer >> 1, (buffer >> 1) + 4096 * 2);
 
 player.getPosition();                  // milliseconds
+player.state();                        // tracker snapshot, or null (see below)
 player.seek(30000);
 player.setProperty('zxtune.sound.loop', '1');
 player.delete();
@@ -68,6 +69,34 @@ player.delete();
 
 `load` throws on unsupported content; use `zxtune.getExceptionMessage(err)` to
 get the text.
+
+`player.state()` returns a fresh plain object for renderers exposing tracker
+state, or `null` when no tracker state is available:
+
+```js
+const state = player.state();
+// { position, pattern, line, tempo, channels, quirk, timeMs } | null
+```
+
+`position` is the order-list index, `pattern` the pattern number, and `line`
+the row (all zero-based). `tempo` is the renderer's tracker tempo, not BPM;
+`quirk` is the tick within the row. `channels` is the active-channel count,
+not a channel mask or a list of note events. `timeMs` is the same decoder
+position reported by `getPosition()`.
+
+Reading state does not render or advance playback. Values describe the
+decoder's current state, which can be ahead of consumed PCM due to internal
+chunk buffering and ahead of audible sound due to WebAudio buffering. Polling
+once per large render call can skip rows; this API alone does not provide a
+complete rhythm-game chart or sample-accurate note timestamps. It belongs to
+the WASM `Player`; the separate browser `ZXTunePlayer` worker wrapper does not
+yet forward it.
+
+After building, run the state regression against a tracker and a non-tracker:
+
+```sh
+node apps/zxtune-web/test/state.mjs <tracker.pt3> <non-tracker.sid>
+```
 
 To list what is inside a container instead of opening one known entry:
 

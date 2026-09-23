@@ -242,6 +242,28 @@ namespace
       return Renderer->GetState().At.CastTo<TimeBase>().Get();
     }
 
+    //! Decoder snapshot, not the audible position (rendering may run ahead).
+    emscripten::val state() const
+    {
+      return Guarded([this] {
+        const auto current = Renderer->GetState();
+        if (!current.Track)
+        {
+          return emscripten::val::null();
+        }
+        const auto& track = *current.Track;
+        auto result = emscripten::val::object();
+        result.set("position", track.Position);
+        result.set("pattern", track.Pattern);
+        result.set("line", track.Line);
+        result.set("tempo", track.Tempo);
+        result.set("channels", track.Channels);
+        result.set("quirk", track.Quirk);
+        result.set("timeMs", current.At.CastTo<TimeBase>().Get());
+        return result;
+      });
+    }
+
     void seek(uint32_t position)
     {
       Guarded([&] {
@@ -423,6 +445,7 @@ EMSCRIPTEN_BINDINGS(zxtune)
       .function("render", &Player::render)
       .function("seek", &Player::seek)
       .function("getPosition", &Player::getPosition)
+      .function("state", &Player::state)
       .function("setProperty", &Player::setProperty)
       .function("setIntProperty", &Player::setIntProperty)
       .function("analyze", &Player::analyze);
