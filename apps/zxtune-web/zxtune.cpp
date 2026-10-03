@@ -23,6 +23,7 @@
 #include "sound/chunk.h"
 #include "sound/impl/fft_analyzer.h"
 #include "sound/sample.h"
+#include "ay_register_capture.h"
 
 #include "error.h"
 #include "string_view.h"
@@ -186,7 +187,8 @@ namespace
     Player(Module::Holder::Ptr holder, uint32_t samplerate)
       : Holder(std::move(holder))
       , Options(Parameters::Container::Create())
-      , Renderer(Module::CreatePipelinedRenderer(*Holder, samplerate,
+      , RegisterCapture(std::make_shared<Web::AYRegisterCapture>())
+      , Renderer(Module::CreatePipelinedRenderer(Web::ObservedAYHolder(Holder, RegisterCapture), samplerate,
                                                  Parameters::CreateMergedAccessor(Options, GlobalOptions())))
     {}
 
@@ -197,11 +199,13 @@ namespace
       return Guarded([&] {
       auto* out = reinterpret_cast<Sound::Sample*>(static_cast<uintptr_t>(target));
       auto rest = samples;
+      RegisterEvents.clear();
       while (rest != 0)
       {
         if (Position == Buffer.size())
         {
           Buffer = Renderer->Render();
+          BufferRegisters = RegisterCapture->Current;
           Position = 0;
           if (Buffer.empty())
           {
@@ -209,6 +213,10 @@ namespace
           }
         }
         const auto got = std::min<std::size_t>(rest, Buffer.size() - Position);
+        if (RegisterCapture->Enabled && RegisterCapture->Supported && (RegisterEvents.empty() || Position == 0))
+        {
+          RegisterEvents.push_back({samples - rest, BufferRegisters});
+        }
         std::memcpy(out, Buffer.data() + Position, got * sizeof(Sound::Sample));
         out += got;
         Position += got;
@@ -245,6 +253,37 @@ namespace
       return Renderer->GetState().At.CastTo<TimeBase>().Get();
     }
 
+    bool monitorRegisters(bool enabled)
+    {
+      RegisterCapture->Enabled = enabled;
+      RegisterEvents.clear();
+      return RegisterCapture->Supported;
+    }
+
+    // Snapshots at PCM frame offsets in the latest render(), not render-ahead time.
+    // AY CPU tunes are sampled once per rendered frame, like tracker tunes.
+    emscripten::val registers() const
+    {
+      if (!RegisterCapture->Supported || !RegisterCapture->Enabled)
+      {
+        return emscripten::val::null();
+      }
+      auto result = emscripten::val::array();
+      for (const auto& event : RegisterEvents)
+      {
+        auto values = emscripten::val::array();
+        for (std::size_t i = 0; i < event.Values.size(); ++i)
+        {
+          values.set(i, event.Values[i]);
+        }
+        auto item = emscripten::val::object();
+        item.set("frame", event.Frame);
+        item.set("values", values);
+        result.call<void>("push", item);
+      }
+      return result;
+    }
+
     //! Decoder snapshot, not the audible position (rendering may run ahead).
     emscripten::val state() const
     {
@@ -273,6 +312,7 @@ namespace
         Renderer->SetPosition(Time::Instant<TimeBase>(position));
         Buffer = Sound::Chunk();
         Position = 0;
+        RegisterEvents.clear();
       });
     }
 
@@ -292,9 +332,17 @@ namespace
 
     const Module::Holder::Ptr Holder;
     const Parameters::Container::Ptr Options;
+    const std::shared_ptr<Web::AYRegisterCapture> RegisterCapture;
     const Module::Renderer::Ptr Renderer;
     Sound::Chunk Buffer;
     std::size_t Position = 0;
+    Web::AYRegisterCapture::Values BufferRegisters{};
+    struct RegisterEvent
+    {
+      uint32_t Frame;
+      Web::AYRegisterCapture::Values Values;
+    };
+    std::vector<RegisterEvent> RegisterEvents;
     Sound::FFTAnalyzer::Ptr Analyzer;
     uint32_t IdleRenders = 0;
   };
@@ -805,6 +853,8 @@ EMSCRIPTEN_BINDINGS(zxtune)
       .function("seek", &Player::seek)
       .function("getPosition", &Player::getPosition)
       .function("state", &Player::state)
+      .function("monitorRegisters", &Player::monitorRegisters)
+      .function("registers", &Player::registers)
       .function("setProperty", &Player::setProperty)
       .function("setIntProperty", &Player::setIntProperty)
       .function("analyze", &Player::analyze);

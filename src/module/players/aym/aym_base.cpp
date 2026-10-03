@@ -108,6 +108,12 @@ namespace Module
     Renderer::Ptr CreateRenderer(uint_t samplerate, Parameters::Accessor::Ptr params) const override
     {
       auto chip = AYM::CreateChip(samplerate, params);
+      return CreateRenderer(samplerate, std::move(params), std::move(chip));
+    }
+
+    Renderer::Ptr CreateRenderer(uint_t /*samplerate*/, Parameters::Accessor::Ptr params,
+                                 Devices::AYM::Chip::Ptr chip) const override
+    {
       auto trackParams = AYM::TrackParameters::Create(std::move(params));
       auto iterator = Tune->CreateDataIterator(std::move(trackParams));
       return MakePtr<AYMRenderer>(Tune->GetFrameDuration() /*TODO: speed variation*/, std::move(iterator),

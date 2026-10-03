@@ -26,6 +26,10 @@ namespace Module::AYM
 
     // TODO: move to another place
     virtual void Dump(Devices::AYM::Device& dev) const = 0;
+
+    // Allow clients to observe the same chip writes that produce the audio.
+    virtual Module::Renderer::Ptr CreateRenderer(uint_t samplerate, Parameters::Accessor::Ptr params,
+                                                 Devices::AYM::Chip::Ptr chip) const = 0;
   };
 
   Holder::Ptr CreateHolder(Chiptune::Ptr chiptune);

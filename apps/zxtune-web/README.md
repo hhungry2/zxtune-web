@@ -63,7 +63,7 @@ const pcm = zxtune.HEAP16.subarray(buffer >> 1, (buffer >> 1) + 4096 * 2);
 player.getPosition();                  // milliseconds
 player.state();                        // tracker snapshot, or null (see below)
 player.seek(30000);
-player.setProperty('zxtune.sound.loop', '1');
+player.setProperty('zxtune.sound.looped', '1');
 player.delete();
 ```
 
@@ -146,7 +146,7 @@ Library-wide parameters, shared by every player created afterwards:
 
 ```js
 zxtune.setOption('zxtune.core.aym.interpolation', 'lq');
-zxtune.setIntOption('zxtune.sound.loop', 1);
+zxtune.setIntOption('zxtune.sound.looped', 1);
 zxtune.getOption('name', 'default');
 zxtune.getIntOption('name', 0);
 ```
@@ -159,3 +159,29 @@ Not implemented yet
 
 - playback of an actual multi-file rip is untested; only the enumerate and
   resolve mechanics are covered, against synthesized fixtures
+
+AY/YM register monitoring
+-------------------------
+
+```js
+const supported = player.monitorRegisters(true); // capability of this renderer
+player.render(samples, frames);
+const snapshots = player.registers(); // [{frame: PCM offset, values: [R0..R13]}]
+```
+
+This observes writes to the actual chip used by the player, including noise,
+mixer and envelope registers. Values retain partial writes and use the same
+bit masks as the PSG. It never estimates pitches or levels from audio. Capture
+is opt-in; `registers()` returns null when disabled or unsupported, and reading
+it does not advance the decoder. After seek it returns an empty array until the
+next render. The first snapshot starts at frame zero even when a render call
+starts inside a buffered decoder frame.
+
+Forward snapshots with their PCM and display them when those samples are played;
+the decoder may be rendering ahead. CPU-emulated AY tunes are sampled once per
+decoder frame. Single AY/YM tracker and stream players are supported. TurboSound
+(two PSGs), other chips and the two I/O registers are not exposed by this API.
+
+`build-registers.py` recompiles the two changed module-player sources and this
+binding against an existing `~/zxtune-web` emsdk cache. A clean checkout can use
+the normal `make platform=emscripten` build.

@@ -731,6 +731,12 @@ namespace Module::AYEMUL
     Renderer::Ptr CreateRenderer(uint_t samplerate, Parameters::Accessor::Ptr params) const override
     {
       auto aym = AYM::CreateChip(samplerate, params);
+      return CreateRenderer(samplerate, std::move(params), std::move(aym));
+    }
+
+    Module::Renderer::Ptr CreateRenderer(uint_t samplerate, Parameters::Accessor::Ptr params,
+                                         Devices::AYM::Chip::Ptr aym) const override
+    {
       auto beeper = CreateBeeper(samplerate, params);
       return CreateRenderer(std::move(params), std::move(aym), std::move(beeper));
     }
